@@ -658,8 +658,27 @@
   <script>
     // All JavaScript är exakt samma som förut — inga funktioner ändrade
     const API = "https://api.ghostguardac.se";
+
+    // Cross-domain handover: om vi kom från labbet.se med ?token=...&license_key=...
+    // spara i localStorage och rensa URL:en
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const urlToken = params.get("token");
+      const urlLicense = params.get("license_key");
+      if (urlToken) localStorage.setItem("gg_token", urlToken);
+      if (urlLicense) localStorage.setItem("gg_license_key", urlLicense);
+      if (urlToken || urlLicense) {
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+    })();
+
     const licenseKey = localStorage.getItem("gg_license_key") || "";
     const token = localStorage.getItem("gg_token") || "";
+
+    // Inte inloggad → tillbaka till landing
+    if (!token) {
+      window.location.href = "https://labbet.se/";
+    }
 
     function escapeHTML(str) {
       if (!str) return "";

@@ -1598,14 +1598,14 @@
 
     <footer class="site-footer">
 
-    © 2026 GhostGuard. All rights reserved.
+    ï¿½ 2026 GhostGuard. All rights reserved.
 
     <br><br>
 
     <a href="/terms/">Terms of Service</a>
-    ·
+    ï¿½
     <a href="/security/">Security</a>
-    ·
+    ï¿½
     <a href="/Refund/">Refund Policy</a>
 
 </footer>
@@ -1767,7 +1767,15 @@
 
 
 
-                    window.location.href = "dashboard.html";
+                    const params = new URLSearchParams({
+
+                        token: data.token || "",
+
+                        license_key: data.license_key || ""
+
+                    });
+
+                    window.location.href = API + "/dashboard?" + params.toString();
 
 
 
