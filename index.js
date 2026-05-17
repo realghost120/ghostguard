@@ -19,13 +19,17 @@ const LICENSE_SECRET = process.env.LICENSE_SECRET || "change_me";
 const PUBLIC_URL = process.env.PUBLIC_URL || "";
 const DASHBOARD_ORIGIN = process.env.DASHBOARD_ORIGIN || null;
 
-// Discord OAuth2
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID || "";
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET || "";
-const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || (PUBLIC_URL ? PUBLIC_URL + "/auth/discord/callback" : "");
 const ADMIN_DISCORD_IDS = (process.env.ADMIN_DISCORD_IDS || "").split(",").map(s => s.trim()).filter(Boolean);
+
+function discordRedirectUri(req) {
+  const proto = req.headers["x-forwarded-proto"] || req.protocol || "https";
+  const host = req.headers["x-forwarded-host"] || req.headers.host;
+  return `${proto}://${host}/auth/discord/callback`;
+}
 const SESSION_SECRET = process.env.SESSION_SECRET || LICENSE_SECRET;
-const SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30; // 30 dagar
+const SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30;
 
 if (!DATABASE_URL) {
   console.warn("Missing DATABASE_URL. API will fail on DB calls.");
@@ -45,7 +49,6 @@ async function qOne(sql, params = []) {
   return rows[0] || null;
 }
 
-// Kör schema.sql vid uppstart (idempotent — CREATE IF NOT EXISTS)
 async function runMigrations() {
   if (!DATABASE_URL) {
     console.warn("Skipping migrations: no DATABASE_URL");
@@ -82,7 +85,6 @@ function sha256(str) {
   return crypto.createHash("sha256").update(str).digest("hex");
 }
 
-/* ----- Session cookies (signerade, ingen DB) ----- */
 function signSession(payload) {
   const data = Buffer.from(JSON.stringify(payload)).toString("base64url");
   const sig = crypto.createHmac("sha256", SESSION_SECRET).update(data).digest("base64url");
@@ -185,11 +187,11 @@ async function resolvePanelIdentity(token) {
 }
 
 /* ================= DISCORD OAUTH2 (admin) ================= */
-app.get("/auth/discord", (_req, res) => {
+app.get("/auth/discord", (req, res) => {
   if (!DISCORD_CLIENT_ID) return res.status(500).send("Discord OAuth not configured");
   const params = new URLSearchParams({
     client_id: DISCORD_CLIENT_ID,
-    redirect_uri: DISCORD_REDIRECT_URI,
+    redirect_uri: discordRedirectUri(req),
     response_type: "code",
     scope: "identify",
   });
@@ -209,7 +211,7 @@ app.get("/auth/discord/callback", async (req, res) => {
         client_secret: DISCORD_CLIENT_SECRET,
         grant_type: "authorization_code",
         code: String(code),
-        redirect_uri: DISCORD_REDIRECT_URI,
+        redirect_uri: discordRedirectUri(req),
       }),
     });
     const tokenData = await tokenRes.json();
@@ -268,7 +270,6 @@ app.get("/admin/me", (req, res) => {
 app.get("/admin", (_req, res) => res.sendFile(path.join(__dirname, "admin.html")));
 app.get("/dashboard", (_req, res) => res.sendFile(path.join(__dirname, "dashboard.html")));
 
-// Download (FiveM anticheat zip)
 app.use("/download", express.static(path.join(__dirname, "download")));
 
 /* ================= ROOT ================= */
@@ -475,7 +476,6 @@ app.post("/api/server/ban/evidence", async (req, res) => {
   }
 });
 
-// Serverar bilden frrn DB
 app.get("/api/server/ban/evidence/:banId", async (req, res) => {
   try {
     const row = await qOne(

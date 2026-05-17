@@ -659,8 +659,6 @@
     // All JavaScript är exakt samma som förut — inga funktioner ändrade
     const API = "https://panel.ghostguardac.se";
 
-    // Cross-domain handover: om vi kom från ghostguardac.se med ?token=...&license_key=...
-    // spara i localStorage och rensa URL:en
     (function () {
       const params = new URLSearchParams(window.location.search);
       const urlToken = params.get("token");
@@ -675,7 +673,6 @@
     const licenseKey = localStorage.getItem("gg_license_key") || "";
     const token = localStorage.getItem("gg_token") || "";
 
-    // Inte inloggad → tillbaka till landing
     if (!token) {
       window.location.href = "https://ghostguardac.se/";
     }

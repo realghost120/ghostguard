@@ -555,18 +555,20 @@
 
 <div class="card">
                     <div class="title">
-                        <i class="fas fa-lock"></i> Admin Secret
+                        <i class="fab fa-discord"></i> Inloggad
                     </div>
-                    <input id="secret" type="password" placeholder="ADMIN_SECRET"/>
-                    <div style="margin-top: 15px;">
-                        <button class="btn btn-blue" id="saveSecret">
-                            <i class="fas fa-save"></i> Spara
+                    <div id="adminUserInfo" style="display:flex;align-items:center;gap:12px;margin-top:10px;">
+                        <img id="adminAvatar" style="width:48px;height:48px;border-radius:50%;display:none;"/>
+                        <div>
+                            <div id="adminUsername" style="font-weight:600;color:#e0edff;">-</div>
+                            <div class="small" id="adminDiscordId">-</div>
+                        </div>
+                    </div>
+                    <div style="margin-top:15px;">
+                        <button class="btn btn-danger" id="logoutBtn">
+                            <i class="fas fa-sign-out-alt"></i> Logga ut
                         </button>
                     </div>
-                    <div class="small">
-                        Skickas som: <span class="mono">Authorization: Bearer &lt;secret&gt;</span>
-                    </div>
-                    <div class="msg" id="secretMsg"></div>
                 </div>
 
                 <div class="card">
@@ -876,40 +878,48 @@
     </div>
 
     <script>
-        const API_BASE = "https://panel.ghostguardac.se";
+        const API_BASE = window.location.origin;
 
-        /* ================= STORAGE ================= */
-        function getSecret() {
-            return localStorage.getItem("gg_admin_secret") || "";
-        }
-
-        function setSecret(v) {
-            localStorage.setItem("gg_admin_secret", v);
-        }
-
-        document.getElementById("secret").value = getSecret();
-
-        document.getElementById("saveSecret").onclick = () => {
-            const val = document.getElementById("secret").value.trim();
-            if (!val) {
-                alert("Secret får inte vara tomt");
-                return;
+        async function checkAuth() {
+            try {
+                const res = await fetch(API_BASE + "/admin/me", { credentials: "include" });
+                if (!res.ok) {
+                    window.location.href = "/auth/discord";
+                    return null;
+                }
+                const data = await res.json();
+                if (!data.success) {
+                    window.location.href = "/auth/discord";
+                    return null;
+                }
+                return data.user;
+            } catch {
+                window.location.href = "/auth/discord";
+                return null;
             }
-            setSecret(val);
-            document.getElementById("secretMsg").innerText = "Secret sparat";
+        }
+
+        function renderUser(user) {
+            document.getElementById("adminUsername").innerText = user.username;
+            document.getElementById("adminDiscordId").innerText = "ID: " + user.discord_id;
+            if (user.avatar) {
+                const img = document.getElementById("adminAvatar");
+                img.src = `https://cdn.discordapp.com/avatars/${user.discord_id}/${user.avatar}.png?size=64`;
+                img.style.display = "block";
+            }
+        }
+
+        document.getElementById("logoutBtn").onclick = async () => {
+            await fetch(API_BASE + "/auth/logout", { method: "POST", credentials: "include" });
+            window.location.href = "/";
         };
 
-        /* ================= HELPERS ================= */
         function authHeaders() {
-            const secret = getSecret();
-            if (!secret) {
-                alert("Admin secret saknas!");
-                throw new Error("NO_ADMIN_SECRET");
-            }
-            return {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer " + secret
-            };
+            return { "Content-Type": "application/json" };
+        }
+
+        function authFetch(url, opts = {}) {
+            return fetch(url, { ...opts, credentials: "include" });
         }
 
         function statusPill(s) {
@@ -1159,10 +1169,14 @@
             loadServers();
         };
 
-        loadStats();
-        loadLicenses();
-        loadCustomers();
-
+        (async () => {
+            const user = await checkAuth();
+            if (!user) return;
+            renderUser(user);
+            loadStats();
+            loadLicenses();
+            loadCustomers();
+        })();
 
         /* ================= STATS ================= */
         async function loadStats() {
