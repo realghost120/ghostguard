@@ -16,9 +16,16 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const DATABASE_URL = process.env.DATABASE_URL;
 const LICENSE_SECRET = process.env.LICENSE_SECRET || "change_me";
-const ADMIN_SECRET = process.env.ADMIN_SECRET || "";
 const PUBLIC_URL = process.env.PUBLIC_URL || "";
 const DASHBOARD_ORIGIN = process.env.DASHBOARD_ORIGIN || null;
+
+// Discord OAuth2
+const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID || "";
+const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET || "";
+const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || (PUBLIC_URL ? PUBLIC_URL + "/auth/discord/callback" : "");
+const ADMIN_DISCORD_IDS = (process.env.ADMIN_DISCORD_IDS || "").split(",").map(s => s.trim()).filter(Boolean);
+const SESSION_SECRET = process.env.SESSION_SECRET || LICENSE_SECRET;
+const SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30; // 30 dagar
 
 if (!DATABASE_URL) {
   console.warn("Missing DATABASE_URL. API will fail on DB calls.");
@@ -75,14 +82,56 @@ function sha256(str) {
   return crypto.createHash("sha256").update(str).digest("hex");
 }
 
+/* ----- Session cookies (signerade, ingen DB) ----- */
+function signSession(payload) {
+  const data = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const sig = crypto.createHmac("sha256", SESSION_SECRET).update(data).digest("base64url");
+  return `${data}.${sig}`;
+}
+function verifySession(cookieValue) {
+  if (!cookieValue || !cookieValue.includes(".")) return null;
+  const [data, sig] = cookieValue.split(".");
+  const expected = crypto.createHmac("sha256", SESSION_SECRET).update(data).digest("base64url");
+  if (sig !== expected) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(data, "base64url").toString("utf8"));
+    if (!payload.exp || payload.exp < Date.now()) return null;
+    return payload;
+  } catch { return null; }
+}
+function parseCookies(req) {
+  const header = req.headers.cookie || "";
+  const out = {};
+  header.split(";").forEach(part => {
+    const i = part.indexOf("=");
+    if (i > -1) out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim());
+  });
+  return out;
+}
+function setSessionCookie(res, value) {
+  const attrs = [
+    `gg_admin=${value}`,
+    `Max-Age=${Math.floor(SESSION_MAX_AGE_MS / 1000)}`,
+    "Path=/",
+    "HttpOnly",
+    "Secure",
+    "SameSite=Lax",
+  ];
+  res.setHeader("Set-Cookie", attrs.join("; "));
+}
+function clearSessionCookie(res) {
+  res.setHeader("Set-Cookie", "gg_admin=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax");
+}
+
 function requireAdmin(req, res) {
-  const bearer = req.headers.authorization || "";
-  const token = bearer.startsWith("Bearer ") ? bearer.slice(7) : null;
-  if (!ADMIN_SECRET || token !== ADMIN_SECRET) {
-    res.status(401).json({ success: false, error: "UNAUTHORIZED" });
-    return false;
+  const cookies = parseCookies(req);
+  const session = verifySession(cookies.gg_admin);
+  if (session && ADMIN_DISCORD_IDS.includes(session.discord_id)) {
+    req.admin = session;
+    return true;
   }
-  return true;
+  res.status(401).json({ success: false, error: "UNAUTHORIZED" });
+  return false;
 }
 
 function generateLicenseKey() {
@@ -135,8 +184,87 @@ async function resolvePanelIdentity(token) {
   return null;
 }
 
+/* ================= DISCORD OAUTH2 (admin) ================= */
+app.get("/auth/discord", (_req, res) => {
+  if (!DISCORD_CLIENT_ID) return res.status(500).send("Discord OAuth not configured");
+  const params = new URLSearchParams({
+    client_id: DISCORD_CLIENT_ID,
+    redirect_uri: DISCORD_REDIRECT_URI,
+    response_type: "code",
+    scope: "identify",
+  });
+  res.redirect(`https://discord.com/api/oauth2/authorize?${params}`);
+});
+
+app.get("/auth/discord/callback", async (req, res) => {
+  try {
+    const code = req.query.code;
+    if (!code) return res.status(400).send("Missing code");
+
+    const tokenRes = await fetch("https://discord.com/api/oauth2/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: DISCORD_CLIENT_ID,
+        client_secret: DISCORD_CLIENT_SECRET,
+        grant_type: "authorization_code",
+        code: String(code),
+        redirect_uri: DISCORD_REDIRECT_URI,
+      }),
+    });
+    const tokenData = await tokenRes.json();
+    if (!tokenData.access_token) {
+      console.error("Discord token exchange failed:", tokenData);
+      return res.status(401).send("Discord auth failed");
+    }
+
+    const userRes = await fetch("https://discord.com/api/users/@me", {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    });
+    const user = await userRes.json();
+    if (!user.id) return res.status(401).send("Could not fetch Discord user");
+
+    if (!ADMIN_DISCORD_IDS.includes(user.id)) {
+      return res.status(403).send(`Access denied. Discord ID ${user.id} är inte admin.`);
+    }
+
+    const payload = {
+      discord_id: user.id,
+      username: user.username,
+      avatar: user.avatar,
+      iat: Date.now(),
+      exp: Date.now() + SESSION_MAX_AGE_MS,
+    };
+    setSessionCookie(res, signSession(payload));
+    res.redirect("/admin");
+  } catch (e) {
+    console.error("Discord callback error:", e);
+    res.status(500).send("Server error");
+  }
+});
+
+app.post("/auth/logout", (_req, res) => {
+  clearSessionCookie(res);
+  res.json({ success: true });
+});
+
+app.get("/admin/me", (req, res) => {
+  const cookies = parseCookies(req);
+  const session = verifySession(cookies.gg_admin);
+  if (!session || !ADMIN_DISCORD_IDS.includes(session.discord_id)) {
+    return res.status(401).json({ success: false });
+  }
+  res.json({
+    success: true,
+    user: {
+      discord_id: session.discord_id,
+      username: session.username,
+      avatar: session.avatar,
+    },
+  });
+});
+
 /* ================= STATIC FILES ================= */
-// Admin panel + customer dashboard serveras direkt fr�n Express
 app.get("/admin", (_req, res) => res.sendFile(path.join(__dirname, "admin.html")));
 app.get("/dashboard", (_req, res) => res.sendFile(path.join(__dirname, "dashboard.html")));
 

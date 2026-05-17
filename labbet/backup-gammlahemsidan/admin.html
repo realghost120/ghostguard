@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+
+<html lang="sv">
+
+<head>
+
+<meta charset="UTF-8"/>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+<title>GhostGuard Admin</title>
+
+
+
+<style>
+
+ :root{
+
+  --bg-main:#0f172a;
+
+  --bg-surface:#111827;
+
+  --bg-soft:#1f2937;
+
+
+
+  --primary:#2563eb;
+
+  --primary-hover:#1d4ed8;
+
+
+
+  --success:#16a34a;
+
+  --danger:#dc2626;
+
+  --orange:#ff9f1c;
+
+
+
+  --border:#1f2937;
+
+  --border-light:#2d3748;
+
+
+
+  --text:#e5e7eb;
+
+  --text-muted:#9ca3af;
+
+}
+
+
+
+/* Reset */
+
+*{
+
+  box-sizing:border-box;
+
+}
+
+
+
+body{
+
+  margin:0;
+
+  font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+
+  background:var(--bg-main);
+
+  color:var(--text);
+
+}
+
+
+
+/* Header */
+
+header{
+
+  height:60px;
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:space-between;
+
+  padding:0 24px;
+
+  background:var(--bg-surface);
+
+  border-bottom:1px solid var(--border-light);
+
+}
+
+
+
+.brand{
+
+  font-weight:600;
+
+  font-size:14px;
+
+}
+
+
+
+/* Layout */
+
+.layout{
+
+  display:flex;
+
+  min-height:calc(100vh - 60px);
+
+}
+
+
+
+/* Sidebar */
+
+.sidebar{
+
+  width:220px;
+
+  background:var(--bg-surface);
+
+  border-right:1px solid var(--border-light);
+
+  padding:20px 14px;
+
+  display:flex;
+
+  flex-direction:column;
+
+}
+
+
+
+.logo{
+
+  font-weight:700;
+
+  font-size:14px;
+
+  margin-bottom:20px;
+
+  padding-bottom:12px;
+
+  border-bottom:1px solid var(--border);
+
+}
+
+
+
+/* Navigation */
+
+.nav-btn{
+
+  background:none;
+
+  border:none;
+
+  color:var(--text-muted);
+
+  padding:10px;
+
+  text-align:left;
+
+  font-size:13px;
+
+  cursor:pointer;
+
+  border-radius:6px;
+
+  margin-bottom:6px;
+
+  transition:background .15s ease, color .15s ease;
+
+}
+
+
+
+.nav-btn:hover{
+
+  background:var(--bg-soft);
+
+  color:#fff;
+
+}
+
+
+
+.nav-btn.active{
+
+  background:var(--primary);
+
+  color:#fff;
+
+}
+
+
+
+/* Content */
+
+.content{
+
+  flex:1;
+
+  padding:28px;
+
+}
+
+
+
+/* Views */
+
+.view{
+
+  display:none;
+
+}
+
+
+
+.view.active{
+
+  display:block;
+
+}
+
+
+
+/* Cards */
+
+.card{
+
+  background:var(--bg-surface);
+
+  border:1px solid var(--border);
+
+  border-radius:8px;
+
+  padding:20px;
+
+  margin-bottom:20px;
+
+}
+
+
+
+.title{
+
+  font-size:14px;
+
+  font-weight:600;
+
+  margin-bottom:16px;
+
+}
+
+
+
+/* Forms */
+
+label{
+
+  display:block;
+
+  font-size:12px;
+
+  font-weight:600;
+
+  color:var(--text-muted);
+
+  margin-bottom:6px;
+
+}
+
+
+
+input,
+
+select{
+
+  width:100%;
+
+  padding:9px 10px;
+
+  border-radius:6px;
+
+  border:1px solid var(--border-light);
+
+  background:var(--bg-soft);
+
+  color:var(--text);
+
+  font-size:13px;
+
+  outline:none;
+
+}
+
+
+
+input:focus,
+
+select:focus{
+
+  border-color:var(--primary);
+
+}
+
+
+
+/* Grid */
+
+.row{
+
+  display:grid;
+
+  grid-template-columns:repeat(3,minmax(0,1fr));
+
+  gap:14px;
+
+}
+
+
+
+/* Buttons */
+
+.btn{
+
+  display:inline-flex;
+
+  align-items:center;
+
+  gap:6px;
+
+  padding:8px 14px;
+
+  font-size:13px;
+
+  font-weight:600;
+
+  border-radius:6px;
+
+  border:1px solid var(--border-light);
+
+  background:var(--bg-soft);
+
+  color:var(--text);
+
+  cursor:pointer;
+
+  transition:background .15s ease;
+
+}
+
+
+
+.btn:hover{
+
+  background:#2a3446;
+
+}
+
+
+
+.btn-primary,
+
+.btn-blue{
+
+  background:var(--primary);
+
+  border-color:var(--primary);
+
+  color:#fff;
+
+}
+
+
+
+.btn-primary:hover,
+
+.btn-blue:hover{
+
+  background:var(--primary-hover);
+
+}
+
+
+
+.btn-success,
+
+.btn-green{
+
+  background:var(--success);
+
+  border-color:var(--success);
+
+  color:#fff;
+
+}
+
+
+
+.btn-danger,
+
+.btn-red{
+
+  background:var(--danger);
+
+  border-color:var(--danger);
+
+  color:#fff;
+
+}
+
+
+
+.btn-orange{
+
+  background:var(--orange);
+
+  border-color:var(--orange);
+
+  color:#fff;
+
+}
+
+
+.btn-orange:hover{
+
+  opacity:.9;
+
+}
+
+
+
+.btn-danger-outline,
+
+.btn-red-outline{
+
+  background:transparent;
+
+  border:1px solid var(--danger);
+
+  color:var(--danger);
+
+}
+
+
+
+.btn-danger-outline:hover,
+
+.btn-red-outline:hover{
+
+  background:var(--danger);
+
+  color:#fff;
+
+}
+
+
+
+/* Actions group */
+
+.actions{
+
+  display:flex;
+
+  flex-wrap:wrap;
+
+  gap:8px;
+
+}
+
+
+
+/* Table */
+
+table{
+
+  width:100%;
+
+  border-collapse:collapse;
+
+  margin-top:10px;
+
+  font-size:13px;
+
+}
+
+
+
+th{
+
+  text-align:left;
+
+  padding:10px;
+
+  font-size:12px;
+
+  font-weight:600;
+
+  color:var(--text-muted);
+
+  border-bottom:1px solid var(--border-light);
+
+}
+
+
+
+td{
+
+  padding:12px 10px;
+
+  border-bottom:1px solid var(--border);
+
+}
+
+
+
+tbody tr:hover{
+
+  background:rgba(255,255,255,0.02);
+
+}
+
+
+
+/* Status pill */
+
+.pill{
+
+  display:inline-block;
+
+  padding:4px 10px;
+
+  font-size:11px;
+
+  font-weight:600;
+
+  border-radius:20px;
+
+  background:var(--bg-soft);
+
+  border:1px solid var(--border-light);
+
+}
+
+
+
+.pill.good{
+
+  color:var(--success);
+
+}
+
+
+
+.pill.bad{
+
+  color:var(--danger);
+
+}
+
+
+
+/* Utility */
+
+.mono{
+
+  font-family:monospace;
+
+  font-size:12px;
+
+}
+
+
+
+.msg{
+
+  margin-top:12px;
+
+  font-size:12px;
+
+  color:var(--text-muted);
+
+  min-height:18px;
+
+}
+
+
+
+.small{
+
+  font-size:12px;
+
+  color:var(--text-muted);
+
+}
+
+/* =========================
+   MOBILE OPTIMIZATION
+   ========================= */
+
+@media (max-width: 900px){
+
+  /* Layout becomes vertical */
+  .layout{
+    flex-direction:column;
+  }
+
+  /* Sidebar becomes top navigation */
+  .sidebar{
+    width:100%;
+    flex-direction:row;
+    overflow-x:auto;
+    padding:10px;
+    border-right:none;
+    border-bottom:1px solid var(--border-light);
+  }
+
+  .logo{
+    display:none;
+  }
+
+  .nav-btn{
+    white-space:nowrap;
+    margin-right:6px;
+  }
+
+  /* Content spacing */
+  .content{
+    padding:16px;
+  }
+
+  /* Grid becomes 2 columns */
+  .row{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+}
+
+
+/* Small phones */
+
+@media (max-width:600px){
+
+  header{
+    padding:0 12px;
+  }
+
+  .brand{
+    font-size:13px;
+  }
+
+  .content{
+    padding:12px;
+  }
+
+  .card{
+    padding:14px;
+  }
+
+  /* Grid becomes 1 column */
+  .row{
+    grid-template-columns:1fr;
+  }
+
+  /* Buttons full width */
+  .actions{
+    flex-direction:column;
+  }
+
+  .btn{
+    width:100%;
+    justify-content:center;
+  }
+
+  /* Table scroll */
+  table{
+    display:block;
+    overflow-x:auto;
+    white-space:nowrap;
+  }
+
+}
+</style>
+
+</head>
+
+<body>
+
+
+
+<header>
+
+  <div class="brand">
+
+    <i class="fas fa-ghost"></i> GhostGuard • Admin Panel
+
+  </div>
+
+  <button class="btn" id="refresh">
+
+    <i class="fas fa-sync-alt"></i> Refresh
+
+  </button>
+
+</header>
+
+
+
+<div class="layout">
+
+
+
+  <!-- SIDEBAR -->
+
+  <aside class="sidebar">
+
+    <div class="logo">
+
+      <i class="fas fa-ghost"></i> GhostGuard
+
+    </div>
+
+
+
+    <button class="nav-btn active" data-view="dashboard">
+
+      <i class="fas fa-home"></i> Dashboard
+
+    </button>
+
+
+
+    <button class="nav-btn" data-view="licenses">
+
+      <i class="fas fa-key"></i> Licenser
+
+    </button>
+
+
+
+    <button class="nav-btn" data-view="customers">
+
+      <i class="fas fa-user"></i> Kunder
+
+    </button>
+
+  </aside>
+
+
+
+  <!-- CONTENT -->
+
+  <main class="content">
+
+
+
+    <!-- DASHBOARD VIEW -->
+
+    <div class="view active" id="dashboard">
+
+
+
+      <div class="card">
+
+        <div class="title">
+
+          <i class="fas fa-lock"></i> Admin Secret
+
+        </div>
+
+        <input id="secret" type="password" placeholder="ADMIN_SECRET"/>
+
+        <button class="btn btn-blue" id="saveSecret">
+
+          <i class="fas fa-save"></i> Spara
+
+        </button>
+
+        <div class="small">
+
+          Skickas som:
+
+          <span class="mono">Authorization: Bearer &lt;secret&gt;</span>
+
+        </div>
+
+        <div class="msg" id="secretMsg"></div>
+
+      </div>
+
+
+
+      <div class="card">
+
+        <div class="title">
+
+          <i class="fas fa-plus-circle"></i> Skapa ny licens
+
+        </div>
+
+        <div class="row">
+
+          <div>
+
+            <label>Dagar giltig</label>
+
+            <select id="licenseDuration">
+
+  <option value="30">1 Månad</option>
+
+  <option value="90">3 Månader</option>
+
+  <option value="lifetime">Livstid</option>
+
+</select>
+
+          </div>
+
+          <div>
+
+            <label>&nbsp;</label>
+
+            <button class="btn btn-green" id="createLicense">
+
+              <i class="fas fa-key"></i> Skapa
+
+            </button>
+
+          </div>
+
+          <div>
+
+            <label>Resultat</label>
+
+            <input id="newLicense" readonly/>
+
+          </div>
+
+        </div>
+
+        <div class="msg" id="licMsg"></div>
+
+      </div>
+
+
+
+    </div>
+
+
+
+    <!-- LICENSE VIEW -->
+
+    <div class="view" id="licenses">
+
+      <div class="card">
+
+        <div class="title">
+
+          <i class="fas fa-clipboard-list"></i> Alla licenser
+
+        </div>
+
+        <table>
+
+          <thead>
+
+  <tr>
+
+    <th>Key</th>
+
+    <th>Status</th>
+
+    <th>Gjort</th>
+
+    <th>Slutar</th>
+
+    <th>Action</th>
+
+  </tr>
+
+</thead>
+
+          <tbody id="tbody"></tbody>
+
+        </table>
+
+        <div class="msg" id="listMsg"></div>
+
+      </div>
+
+    </div>
+
+
+
+    <!-- CUSTOMERS VIEW -->
+
+    <div class="view" id="customers">
+
+      <div class="card">
+
+        <div class="title">
+
+          <i class="fas fa-user"></i> Skapa kund
+
+        </div>
+
+
+
+        <div class="row">
+
+          <div>
+
+            <label>Username</label>
+
+            <input id="cu" placeholder="kund1"/>
+
+          </div>
+
+
+
+          <div>
+
+            <label>Password</label>
+
+            <input id="cp" type="password" placeholder="lösenord"/>
+
+          </div>
+
+
+
+          <div>
+
+            <label>License Key</label>
+
+            <input id="ck" placeholder="GG-XXXX-XXXX"/>
+
+          </div>
+
+        </div>
+
+
+
+        <div style="margin-top:10px;">
+
+          <button class="btn btn-blue" id="createCustomer">
+
+            <i class="fas fa-user-plus"></i> Skapa kund
+
+          </button>
+
+        </div>
+
+
+
+          <div class="card">
+
+  <div class="title">
+
+    <i class="fas fa-users"></i> Alla kunder
+
+  </div>
+
+
+
+  <table>
+
+    <thead>
+
+      <tr>
+
+        <th>Username</th>
+
+        <th>License</th>
+
+        <th>Status</th>
+
+        <th>Skapad</th>
+
+      </tr>
+
+    </thead>
+
+    <tbody id="customerTable"></tbody>
+
+  </table>
+
+
+
+  <div class="msg" id="customerListMsg"></div>
+
+</div>
+
+        
+
+
+
+        <div class="msg" id="custMsg"></div>
+
+      </div>
+
+    </div>
+
+
+
+  </main>
+
+
+
+</div>
+
+<script>
+
+const API_BASE = "https://ghostgaurd-becakd.onrender.com";
+
+
+
+/* ================= STORAGE ================= */
+
+
+
+function getSecret(){
+
+  return localStorage.getItem("gg_admin_secret") || "";
+
+}
+
+
+
+function setSecret(v){
+
+  localStorage.setItem("gg_admin_secret", v);
+
+}
+
+
+
+document.getElementById("secret").value = getSecret();
+
+
+
+document.getElementById("saveSecret").onclick = () => {
+
+  const val = document.getElementById("secret").value.trim();
+
+  if (!val){
+
+    alert("Secret får inte vara tomt");
+
+    return;
+
+  }
+
+  setSecret(val);
+
+  document.getElementById("secretMsg").innerText = "Secret sparat";
+
+};
+
+
+
+/* ================= HELPERS ================= */
+
+
+
+function authHeaders(){
+
+  const secret = getSecret();
+
+  if (!secret){
+
+    alert("Admin secret saknas!");
+
+    throw new Error("NO_ADMIN_SECRET");
+
+  }
+
+  return {
+
+    "Content-Type": "application/json",
+
+    "Authorization": "Bearer " + secret
+
+  };
+
+}
+
+
+
+function statusPill(s){
+
+  const ok = (s === "ACTIVE");
+
+  return `<span class="pill ${ok ? "good" : "bad"}">${s || "-"}</span>`;
+
+}
+
+
+
+function formatDate(dateStr){
+
+  if (!dateStr) return "Livstid";
+
+  const d = new Date(dateStr);
+
+  return d.toLocaleDateString("sv-SE", {
+
+    year:"numeric",
+
+    month:"short",
+
+    day:"numeric"
+
+  });
+
+}
+
+
+
+async function safeJson(res){
+
+  const text = await res.text();
+
+  try { return JSON.parse(text); }
+
+  catch { return null; }
+
+}
+
+
+
+/* ================= LICENSES ================= */
+
+
+
+async function loadLicenses(){
+
+  const res = await fetch(API_BASE + "/admin/licenses", {
+
+    headers: authHeaders()
+
+  });
+
+
+
+  const json = await safeJson(res);
+
+  if (!res.ok || !json?.success) return;
+
+
+
+  const rows = (json.data || []).map(l => {
+
+
+
+    const isActive = l.status === "ACTIVE";
+
+    const next = isActive ? "DISABLED" : "ACTIVE";
+
+
+
+    return `
+
+      <tr>
+
+        <td class="mono">${l.license_key}</td>
+
+        <td>${statusPill(l.status)}</td>
+
+        <td>${formatDate(l.created_at)}</td>
+
+        <td>${formatDate(l.expires_at)}</td>
+
+        <td class="actions">
+
+          <button class="btn ${isActive ? 'btn-danger':'btn-success'}"
+
+            onclick="toggleLicense('${l.license_key}','${next}')">
+
+            ${isActive ? 'Stäng av':'Aktivera'}
+
+          </button>
+
+          <button class="btn btn-danger-outline"
+
+            onclick="deleteLicense('${l.license_key}')">
+
+            Ta bort
+
+          </button>
+
+        </td>
+
+      </tr>
+
+    `;
+
+  }).join("");
+
+
+
+  document.getElementById("tbody").innerHTML = rows;
+
+}
+
+
+
+async function toggleLicense(key,status){
+
+  await fetch(API_BASE + "/admin/toggle-license",{
+
+    method:"POST",
+
+    headers:authHeaders(),
+
+    body:JSON.stringify({license_key:key,status})
+
+  });
+
+  loadLicenses();
+
+}
+
+
+
+async function deleteLicense(key){
+
+  if(!confirm("Ta bort licensen?")) return;
+
+  await fetch(API_BASE + "/admin/delete-license/"+key,{
+
+    method:"DELETE",
+
+    headers:authHeaders()
+
+  });
+
+  loadLicenses();
+
+}
+
+
+
+/* ================= CUSTOMERS ================= */
+
+
+
+async function loadCustomers(){
+
+  const res = await fetch(API_BASE + "/admin/customers",{
+
+    headers:authHeaders()
+
+  });
+
+
+
+  const json = await safeJson(res);
+
+  if (!res.ok || !json?.success) return;
+
+
+
+  const rows = (json.data || []).map(c=>{
+
+
+
+    const isActive = c.active === true;
+
+
+
+    return `
+
+      <tr>
+
+        <td>${c.username}</td>
+
+        <td class="mono">${c.license_key}</td>
+
+        <td>${statusPill(isActive ? "ACTIVE" : "DISABLED")}</td>
+
+        <td>${formatDate(c.created_at)}</td>
+
+        <td class="actions">
+
+          <button class="btn btn-warning"
+
+            onclick="changePassword('${c.id}')">
+
+            Byt lösenord
+
+          </button>
+
+          <button class="btn btn-success"
+
+            onclick="generatePasswordForUser('${c.id}')">
+
+            Generera nytt
+
+          </button>
+
+          <button class="btn ${isActive?'btn-danger':'btn-success'}"
+
+            onclick="toggleCustomer('${c.id}',${isActive})">
+
+            ${isActive?'Pausa':'Aktivera'}
+
+          </button>
+
+          <button class="btn btn-danger-outline"
+
+            onclick="deleteCustomer('${c.id}')">
+
+            Ta bort
+
+          </button>
+
+        </td>
+
+      </tr>
+
+    `;
+
+  }).join("");
+
+
+
+  document.getElementById("customerTable").innerHTML = rows;
+
+}
+
+
+
+async function toggleCustomer(id,current){
+
+  await fetch(API_BASE + "/admin/toggle-customer",{
+
+    method:"POST",
+
+    headers:authHeaders(),
+
+    body:JSON.stringify({id,active:!current})
+
+  });
+
+  loadCustomers();
+
+}
+
+
+
+async function deleteCustomer(id){
+
+  if(!confirm("Ta bort konto?")) return;
+
+  await fetch(API_BASE + "/admin/delete-customer/"+id,{
+
+    method:"DELETE",
+
+    headers:authHeaders()
+
+  });
+
+  loadCustomers();
+
+}
+
+
+
+async function changePassword(id){
+
+  const pass = prompt("Nytt lösenord:");
+
+  if(!pass) return;
+
+
+
+  await fetch(API_BASE + "/admin/update-customer-password",{
+
+    method:"POST",
+
+    headers:authHeaders(),
+
+    body:JSON.stringify({id,new_password:pass})
+
+  });
+
+
+
+  alert("Lösenord uppdaterat");
+
+}
+
+
+
+function generateRandomPassword(){
+
+  return Math.random().toString(36).slice(-8);
+
+}
+
+
+
+async function generatePasswordForUser(id){
+
+  const pass = generateRandomPassword();
+
+
+
+  await fetch(API_BASE + "/admin/update-customer-password",{
+
+    method:"POST",
+
+    headers:authHeaders(),
+
+    body:JSON.stringify({id,new_password:pass})
+
+  });
+
+
+
+  alert("Nytt lösenord: "+pass);
+
+}
+
+
+
+/* ================= CREATE CUSTOMER ================= */
+
+
+
+document.getElementById("createCustomer").onclick = async ()=>{
+
+  const u = cu.value.trim();
+
+  const p = cp.value.trim();
+
+  const k = ck.value.trim();
+
+
+
+  if(!u||!p||!k){ alert("Fyll i alla fält"); return; }
+
+
+
+  await fetch(API_BASE + "/admin/create-customer",{
+
+    method:"POST",
+
+    headers:authHeaders(),
+
+    body:JSON.stringify({username:u,password:p,license_key:k})
+
+  });
+
+
+
+  loadCustomers();
+
+};
+
+
+
+/* ================= NAVIGATION ================= */
+
+
+
+document.querySelectorAll(".nav-btn").forEach(btn=>{
+
+  btn.addEventListener("click",()=>{
+
+    document.querySelectorAll(".nav-btn")
+
+      .forEach(b=>b.classList.remove("active"));
+
+    btn.classList.add("active");
+
+
+
+    document.querySelectorAll(".view")
+
+      .forEach(v=>v.classList.remove("active"));
+
+
+
+    document.getElementById(btn.dataset.view)
+
+      .classList.add("active");
+
+
+
+    if(btn.dataset.view==="licenses") loadLicenses();
+
+    if(btn.dataset.view==="customers") loadCustomers();
+
+  });
+
+});
+
+
+
+/* ================= INIT ================= */
+
+
+
+loadLicenses();
+
+loadCustomers();
+
+
+
+/* Make functions global */
+
+window.toggleCustomer = toggleCustomer;
+
+window.deleteCustomer = deleteCustomer;
+
+window.changePassword = changePassword;
+
+window.generatePasswordForUser = generatePasswordForUser;
+
+window.toggleLicense = toggleLicense;
+
+window.deleteLicense = deleteLicense;
+
+
+
+</script>
+
+
+
+</body>
+
+</html>   
+
