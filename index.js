@@ -1,31 +1,41 @@
 import express from "express";
 import crypto from "crypto";
 import cors from "cors";
-import { createClient } from "@supabase/supabase-js";
+import path from "path";
+import { fileURLToPath } from "url";
+import pg from "pg";
 
-console.log("🔥 THIS IS THE REAL FILE 🔥");
+const { Pool } = pg;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+console.log("GhostGuard backend starting...");
 const app = express();
 
 /* ================= CONFIG ================= */
 const PORT = process.env.PORT || 3000;
-
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const SUPABASE_EVIDENCE_BUCKET = process.env.SUPABASE_EVIDENCE_BUCKET || "ban-evidence";
-
+const DATABASE_URL = process.env.DATABASE_URL;
 const LICENSE_SECRET = process.env.LICENSE_SECRET || "change_me";
 const ADMIN_SECRET = process.env.ADMIN_SECRET || "";
-
-
-// (valfritt) sätt din Netlify-domän här för striktare CORS
-// ex: https://ghostguard-panel.netlify.app
+const PUBLIC_URL = process.env.PUBLIC_URL || "";
 const DASHBOARD_ORIGIN = process.env.DASHBOARD_ORIGIN || null;
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  console.warn("⚠️ Missing SUPABASE env vars. API will fail on DB calls.");
+if (!DATABASE_URL) {
+  console.warn("Missing DATABASE_URL. API will fail on DB calls.");
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+const pool = new Pool({
+  connectionString: DATABASE_URL,
+  ssl: DATABASE_URL && DATABASE_URL.includes("railway") ? { rejectUnauthorized: false } : false,
+});
+
+async function q(sql, params = []) {
+  const res = await pool.query(sql, params);
+  return res.rows;
+}
+async function qOne(sql, params = []) {
+  const rows = await q(sql, params);
+  return rows[0] || null;
+}
 
 /* ================= MIDDLEWARE ================= */
 app.use(express.json({ limit: "15mb" }));
@@ -36,7 +46,6 @@ const corsOptions = {
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 };
-
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 
@@ -48,7 +57,6 @@ function sha256(str) {
 function requireAdmin(req, res) {
   const bearer = req.headers.authorization || "";
   const token = bearer.startsWith("Bearer ") ? bearer.slice(7) : null;
-
   if (!ADMIN_SECRET || token !== ADMIN_SECRET) {
     res.status(401).json({ success: false, error: "UNAUTHORIZED" });
     return false;
@@ -67,13 +75,10 @@ function computeExpiresAt(duration, explicitExpiresAt) {
     if (Number.isNaN(parsed.getTime())) return null;
     return parsed.toISOString();
   }
-
   const raw = String(duration || "P").trim().toLowerCase();
   if (raw === "p" || raw === "perm" || raw === "permanent") return null;
-
   const match = raw.match(/^(\d+)([mhd])$/);
   if (!match) return null;
-
   const amount = Number(match[1]);
   const unit = match[2];
   const ms = unit === "m" ? amount * 60_000 : unit === "h" ? amount * 3_600_000 : amount * 86_400_000;
@@ -82,25 +87,17 @@ function computeExpiresAt(duration, explicitExpiresAt) {
 
 function normalizeDuration(duration) {
   const raw = String(duration || "P").trim().toLowerCase();
-
-  if (raw === "p" || raw === "perm" || raw === "permanent") {
-    return { ok: true, value: "P" };
-  }
-
+  if (raw === "p" || raw === "perm" || raw === "permanent") return { ok: true, value: "P" };
   const match = raw.match(/^(\d+)([mhd])$/);
   if (!match) return { ok: false, value: null };
-
   const amount = Number(match[1]);
   if (!Number.isFinite(amount) || amount <= 0) return { ok: false, value: null };
-
   return { ok: true, value: `${amount}${match[2]}` };
 }
 
 function normalizeIdentifiers(value) {
   if (!Array.isArray(value)) return [];
-  const cleaned = value
-    .map((x) => String(x || "").trim())
-    .filter(Boolean);
+  const cleaned = value.map((x) => String(x || "").trim()).filter(Boolean);
   return [...new Set(cleaned)];
 }
 
@@ -110,39 +107,21 @@ function extractDataUriParts(imageData) {
   return { mime: m[1], base64: m[2] };
 }
 
-async function requireCustomer(req, res) {
-  const token = req.body?.token || null;
-  if (!token) {
-    res.status(401).json({ success: false, error: "UNAUTHORIZED" });
-    return null;
-  }
-
-  const { data: user, error } = await supabase
-    .from("customers")
-    .select("*")
-    .eq("id", token)
-    .single();
-
-  if (error || !user) {
-    res.status(401).json({ success: false, error: "UNAUTHORIZED" });
-    return null;
-  }
-
-  return user;
-}
-
 async function resolvePanelIdentity(token) {
   if (!token) return null;
-
-  const { data: user } = await supabase.from("customers").select("*").eq("id", token).single();
+  const user = await qOne("SELECT * FROM customers WHERE id = $1", [token]);
   if (user) return { kind: "customer", license_key: user.license_key, user };
-
   return null;
 }
 
+/* ================= STATIC FILES ================= */
+// Admin panel + customer dashboard serveras direkt fr�n Express
+app.get("/admin", (_req, res) => res.sendFile(path.join(__dirname, "admin.html")));
+app.get("/dashboard", (_req, res) => res.sendFile(path.join(__dirname, "dashboard.html")));
+
 /* ================= ROOT ================= */
-app.get("/", (req, res) => res.send("GhostGuard Backend OK"));
-app.get("/health", (req, res) => res.json({ ok: true, ts: Date.now() }));
+app.get("/", (_req, res) => res.send("GhostGuard Backend OK"));
+app.get("/health", (_req, res) => res.json({ ok: true, ts: Date.now() }));
 
 /* ================= LICENSE VERIFY ================= */
 app.post("/api/license/verify", async (req, res) => {
@@ -150,27 +129,21 @@ app.post("/api/license/verify", async (req, res) => {
     const { license_key, hwid } = req.body || {};
     if (!license_key) return res.status(400).json({ valid: false, reason: "MISSING_KEY" });
 
-    const { data: lic, error } = await supabase
-      .from("licenses")
-      .select("*")
-      .eq("license_key", license_key)
-      .single();
-
-    if (error || !lic) return res.json({ valid: false, reason: "NOT_FOUND" });
+    const lic = await qOne("SELECT * FROM licenses WHERE license_key = $1", [license_key]);
+    if (!lic) return res.json({ valid: false, reason: "NOT_FOUND" });
     if (lic.status !== "ACTIVE") return res.json({ valid: false, reason: lic.status });
 
     if (lic.expires_at && new Date(lic.expires_at) < new Date()) {
       return res.json({ valid: false, reason: "EXPIRED" });
     }
 
-    // HWID bind
     if (lic.hwid) {
       if (hwid && lic.hwid !== hwid) return res.json({ valid: false, reason: "HWID_MISMATCH" });
     } else if (hwid) {
-      await supabase.from("licenses").update({ hwid }).eq("id", lic.id);
+      await q("UPDATE licenses SET hwid = $1 WHERE id = $2", [hwid, lic.id]);
     }
 
-    await supabase.from("licenses").update({ last_seen: new Date().toISOString() }).eq("id", lic.id);
+    await q("UPDATE licenses SET last_seen = now() WHERE id = $1", [lic.id]);
 
     const payload = JSON.stringify({
       license_key,
@@ -178,7 +151,6 @@ app.post("/api/license/verify", async (req, res) => {
       expires_at: lic.expires_at,
       issued_at: Date.now(),
     });
-
     const signature = crypto.createHmac("sha256", LICENSE_SECRET).update(payload).digest("hex");
 
     return res.json({ valid: true, payload, signature });
@@ -188,127 +160,72 @@ app.post("/api/license/verify", async (req, res) => {
   }
 });
 
-
-
 /* ================= BANS ================= */
-
-app.post("/api/server/ban", async (req,res)=>{
-  try{
+app.post("/api/server/ban", async (req, res) => {
+  try {
     const {
-      license_key,
-      player,
-      player_name,
-      identifiers,
-      reason,
-      duration,
-      banned_by,
-      ban_id,
-      created_at,
-      expires_at
+      license_key, player, player_name, identifiers, reason,
+      duration, banned_by, ban_id, created_at, expires_at,
     } = req.body || {};
 
-    if(!license_key || !player){
-      return res.status(400).json({success:false,error:"MISSING_FIELDS"});
+    if (!license_key || !player) {
+      return res.status(400).json({ success: false, error: "MISSING_FIELDS" });
     }
 
     const durationInfo = normalizeDuration(duration || "P");
-    if(!durationInfo.ok){
-      return res.status(400).json({success:false,error:"INVALID_DURATION"});
-    }
+    if (!durationInfo.ok) return res.status(400).json({ success: false, error: "INVALID_DURATION" });
 
-    const finalBanId   = ban_id || ("GG-" + Date.now());
+    const finalBanId = ban_id || ("GG-" + Date.now());
     const finalCreated = created_at ? new Date(created_at).toISOString() : new Date().toISOString();
     const finalExpires = computeExpiresAt(durationInfo.value, expires_at);
 
-    const { error } = await supabase
-      .from("bans")
-      .insert([{
-        ban_id:      finalBanId,
-        license_key: license_key,
-        player_id:   String(player),
-        player_name: player_name || null,
-        identifiers: normalizeIdentifiers(identifiers),
-        reason:      reason || "No reason",
-        duration:    durationInfo.value,
-        banned_by:   banned_by || "GhostGuard(Auto)",
-        active:      true,
-        created_at:  finalCreated,
-        expires_at:  finalExpires,
-      }]);
+    await q(
+      `INSERT INTO bans (ban_id, license_key, player_id, player_name, identifiers, reason, duration, banned_by, active, created_at, expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, $9, $10)`,
+      [
+        finalBanId, license_key, String(player), player_name || null,
+        normalizeIdentifiers(identifiers), reason || "No reason",
+        durationInfo.value, banned_by || "GhostGuard(Auto)",
+        finalCreated, finalExpires,
+      ]
+    );
 
-    if(error){
-      console.error("BAN INSERT ERROR:", error);
-      return res.status(500).json({success:false});
-    }
-
-    return res.json({ success:true, ban_id: finalBanId });
-
-  }catch(e){
+    return res.json({ success: true, ban_id: finalBanId });
+  } catch (e) {
     console.error("BAN ERROR:", e);
-    res.status(500).json({success:false});
+    return res.status(500).json({ success: false });
   }
-})
+});
 
-
-
-
-app.get("/api/server/bans/:license", async (req,res)=>{
-  try{
-
-    const license = req.params.license
-
-    const { data } = await supabase
-      .from("bans")
-      .select("*")
-      .eq("license_key", license)
-      .order("created_at",{ascending:false})
-
-    res.json({
-      success:true,
-      bans:data || []
-    })
-
-  }catch(e){
-    console.log(e)
-    res.status(500).json({success:false})
+app.get("/api/server/bans/:license", async (req, res) => {
+  try {
+    const data = await q(
+      "SELECT ban_id, license_key, player_id, player_name, identifiers, reason, duration, banned_by, evidence_url, active, expires_at, unbanned_at, unbanned_by, created_at FROM bans WHERE license_key = $1 ORDER BY created_at DESC",
+      [req.params.license]
+    );
+    res.json({ success: true, bans: data });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ success: false });
   }
-})
+});
 
 app.post("/api/server/ban/check", async (req, res) => {
   try {
     const { license_key, identifiers } = req.body || {};
-
-    if (!license_key) {
-      return res.status(400).json({ success: false, error: "MISSING_LICENSE" });
-    }
+    if (!license_key) return res.status(400).json({ success: false, error: "MISSING_LICENSE" });
 
     const ids = normalizeIdentifiers(identifiers);
+    if (ids.length === 0) return res.json({ success: true, banned: false });
 
-    if (ids.length === 0) {
-      return res.json({ success: true, banned: false });
-    }
-
-    const { data, error } = await supabase.rpc("check_player_banned", {
-      p_license_key:  license_key,
-      p_identifiers:  ids,
-    });
-
-    if (error) {
-      console.error("ban/check RPC error:", error);
-      return res.status(500).json({ success: false });
-    }
-
-    if (data && data.length > 0) {
-      return res.json({ success: true, banned: true, ban: data[0] });
-    }
-
+    const rows = await q("SELECT * FROM check_player_banned($1, $2)", [license_key, ids]);
+    if (rows.length > 0) return res.json({ success: true, banned: true, ban: rows[0] });
     return res.json({ success: true, banned: false });
   } catch (e) {
     console.error("ban/check error:", e);
     return res.status(500).json({ success: false });
   }
-})
-
+});
 
 app.delete("/api/server/unban/:banId", async (req, res) => {
   try {
@@ -316,38 +233,24 @@ app.delete("/api/server/unban/:banId", async (req, res) => {
     const bearer = req.headers.authorization || "";
     const token = bearer.startsWith("Bearer ") ? bearer.slice(7) : null;
     const identity = await resolvePanelIdentity(token);
+    if (!identity) return res.status(401).json({ success: false, error: "UNAUTHORIZED" });
 
-    if (!identity) {
-      return res.status(401).json({ success: false, error: "UNAUTHORIZED" });
-    }
-
-    const { data: ban } = await supabase
-      .from("bans")
-      .select("*")
-      .eq("ban_id", banId)
-      .single();
-
+    const ban = await qOne("SELECT * FROM bans WHERE ban_id = $1", [banId]);
     if (!ban) return res.json({ success: false });
-
     if (ban.license_key !== identity.license_key) {
       return res.status(403).json({ success: false, error: "FORBIDDEN" });
     }
 
     const unbannedBy = identity.user.username;
-
-    await supabase
-      .from("bans")
-      .update({
-        active:       false,
-        unbanned_at:  new Date().toISOString(),
-        unbanned_by:  unbannedBy,
-      })
-      .eq("ban_id", banId);
+    await q(
+      "UPDATE bans SET active = false, unbanned_at = now(), unbanned_by = $1 WHERE ban_id = $2",
+      [unbannedBy, banId]
+    );
 
     pushAction(ban.license_key, {
-      id:         "ACT-" + Date.now(),
-      type:       "unban",
-      payload:    { ban_id: banId },
+      id: "ACT-" + Date.now(),
+      type: "unban",
+      payload: { ban_id: banId },
       created_at: new Date().toISOString(),
     });
 
@@ -361,37 +264,24 @@ app.delete("/api/server/unban/:banId", async (req, res) => {
 app.post("/api/server/unban", async (req, res) => {
   try {
     const { license_key, ban_id, unbanned_by } = req.body || {};
-    if (!license_key || !ban_id) {
-      return res.status(400).json({ success: false, error: "MISSING_FIELDS" });
-    }
+    if (!license_key || !ban_id) return res.status(400).json({ success: false, error: "MISSING_FIELDS" });
 
-    const { data: lic } = await supabase
-      .from("licenses")
-      .select("license_key")
-      .eq("license_key", license_key)
-      .eq("status", "ACTIVE")
-      .single();
-
+    const lic = await qOne(
+      "SELECT license_key FROM licenses WHERE license_key = $1 AND status = 'ACTIVE'",
+      [license_key]
+    );
     if (!lic) return res.status(401).json({ success: false, error: "INVALID_LICENSE" });
 
-    const { data: ban } = await supabase
-      .from("bans")
-      .select("ban_id")
-      .eq("ban_id", ban_id)
-      .eq("license_key", license_key)
-      .single();
-
+    const ban = await qOne(
+      "SELECT ban_id FROM bans WHERE ban_id = $1 AND license_key = $2",
+      [ban_id, license_key]
+    );
     if (!ban) return res.json({ success: false, error: "BAN_NOT_FOUND" });
 
-    await supabase
-      .from("bans")
-      .update({
-        active:      false,
-        unbanned_at: new Date().toISOString(),
-        unbanned_by: unbanned_by || "In-Game Admin",
-      })
-      .eq("ban_id", ban_id);
-
+    await q(
+      "UPDATE bans SET active = false, unbanned_at = now(), unbanned_by = $1 WHERE ban_id = $2",
+      [unbanned_by || "In-Game Admin", ban_id]
+    );
     return res.json({ success: true });
   } catch (e) {
     console.error("server/unban error:", e);
@@ -401,81 +291,65 @@ app.post("/api/server/unban", async (req, res) => {
 
 app.delete("/api/server/ban/:banId", async (req, res) => {
   try {
-    const { banId } = req.params;
-    await supabase
-      .from("bans")
-      .update({ expires_at: new Date().toISOString() })
-      .eq("ban_id", banId);
-
+    await q("UPDATE bans SET expires_at = now() WHERE ban_id = $1", [req.params.banId]);
     return res.json({ success: true });
   } catch (e) {
-    console.log("UNBAN LEGACY ERROR:", e);
+    console.error("UNBAN LEGACY ERROR:", e);
     return res.status(500).json({ success: false });
   }
 });
 
-// ban skaen  everidec
-
+/* ================= BAN EVIDENCE (lagras som bytea i DB) ================= */
 app.post("/api/server/ban/evidence", async (req, res) => {
   try {
     const { license_key, ban_id, image_data } = req.body || {};
-
-    if (!license_key || !ban_id || !image_data) {
-      return res.status(400).json({ success: false });
-    }
+    if (!license_key || !ban_id || !image_data) return res.status(400).json({ success: false });
 
     const parsed = extractDataUriParts(image_data);
-    if (!parsed) {
-      return res.status(400).json({ success: false });
-    }
+    if (!parsed) return res.status(400).json({ success: false });
 
-    const ext = parsed.mime.includes("png") ? "png" : "jpg";
-    const objectPath = `${license_key}/${ban_id}.${ext}`;
     const binary = Buffer.from(parsed.base64, "base64");
+    const publicUrl = (PUBLIC_URL ? PUBLIC_URL.replace(/\/$/, "") : "") + `/api/server/ban/evidence/${ban_id}`;
 
-    const { error } = await supabase.storage
-      .from(SUPABASE_EVIDENCE_BUCKET)
-      .upload(objectPath, binary, {
-        contentType: parsed.mime,
-        upsert: true
-      });
+    await q(
+      "UPDATE bans SET evidence = $1, evidence_mime = $2, evidence_url = $3 WHERE ban_id = $4 AND license_key = $5",
+      [binary, parsed.mime, publicUrl, ban_id, license_key]
+    );
 
-    if (error) {
-      console.log(error);
-      return res.status(500).json({ success:false });
-    }
-
-    const { data } = supabase.storage
-      .from(SUPABASE_EVIDENCE_BUCKET)
-      .getPublicUrl(objectPath);
-
-    await supabase
-      .from("bans")
-      .update({ evidence_url: data.publicUrl })
-      .eq("ban_id", ban_id);
-
-    res.json({ success:true });
-
+    res.json({ success: true, url: publicUrl });
   } catch (e) {
-    console.log(e);
-    res.status(500).json({ success:false });
+    console.error(e);
+    res.status(500).json({ success: false });
   }
 });
 
-
+// Serverar bilden frrn DB
+app.get("/api/server/ban/evidence/:banId", async (req, res) => {
+  try {
+    const row = await qOne(
+      "SELECT evidence, evidence_mime FROM bans WHERE ban_id = $1",
+      [req.params.banId]
+    );
+    if (!row || !row.evidence) return res.status(404).send("Not found");
+    res.setHeader("Content-Type", row.evidence_mime || "image/png");
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.send(row.evidence);
+  } catch (e) {
+    console.error("evidence get error:", e);
+    res.status(500).send("error");
+  }
+});
 
 /* ================= LIVE MEMORY (status + players) ================= */
-const serverState = {}; // { [license_key]: { last_seen, players, uptime, version } }
-const livePlayersByLicense = {}; // { [license_key]: [{id,name,ping,identifiers?}] }
+const serverState = {};
+const livePlayersByLicense = {};
 
-/* ===== HEARTBEAT ===== */
 app.post("/api/server/heartbeat", async (req, res) => {
   try {
     const { license_key, players, version, uptime } = req.body || {};
     if (!license_key) return res.status(400).json({ success: false, error: "MISSING_LICENSE" });
 
     livePlayersByLicense[license_key] = Array.isArray(players) ? players : [];
-
     serverState[license_key] = {
       last_seen: Date.now(),
       players: livePlayersByLicense[license_key].length,
@@ -484,17 +358,15 @@ app.post("/api/server/heartbeat", async (req, res) => {
     };
 
     try {
-      await supabase.from("server_status").upsert({
-        license_key,
-        online:       true,
-        player_count: livePlayersByLicense[license_key].length,
-        version:      version || null,
-        uptime:       Number(uptime || 0),
-        last_seen:    new Date().toISOString(),
-      });
-    } catch (dbErr) {
-      // ignore if table missing
-    }
+      await q(
+        `INSERT INTO server_status (license_key, online, player_count, version, uptime, last_seen)
+         VALUES ($1, true, $2, $3, $4, now())
+         ON CONFLICT (license_key) DO UPDATE
+         SET online = EXCLUDED.online, player_count = EXCLUDED.player_count,
+             version = EXCLUDED.version, uptime = EXCLUDED.uptime, last_seen = EXCLUDED.last_seen`,
+        [license_key, livePlayersByLicense[license_key].length, version || null, Number(uptime || 0)]
+      );
+    } catch (_) {}
 
     return res.json({ success: true });
   } catch (e) {
@@ -504,18 +376,13 @@ app.post("/api/server/heartbeat", async (req, res) => {
 });
 
 app.get("/api/server/players/:license", (req, res) => {
-  const license = req.params.license;
-  return res.json({ success: true, players: livePlayersByLicense[license] || [] });
+  res.json({ success: true, players: livePlayersByLicense[req.params.license] || [] });
 });
 
 app.get("/api/server/status/:license", (req, res) => {
-  const license = req.params.license;
-  const data = serverState[license];
-
+  const data = serverState[req.params.license];
   if (!data) return res.json({ online: false, players: 0, uptime: 0, version: null });
-
   const online = Date.now() - data.last_seen < 30000;
-
   return res.json({
     online,
     players: data.players || 0,
@@ -525,35 +392,26 @@ app.get("/api/server/status/:license", (req, res) => {
   });
 });
 
-/* ================= ACTION QUEUE (Dashboard -> FiveM poll) ================= */
-const actionQueue = {}; // { [license_key]: [ {id, type, payload, created_at} ] }
-
+/* ================= ACTION QUEUE ================= */
+const actionQueue = {};
 function pushAction(license_key, action) {
   actionQueue[license_key] = actionQueue[license_key] || [];
   actionQueue[license_key].push(action);
   if (actionQueue[license_key].length > 200) actionQueue[license_key].splice(0, 50);
 }
 
-// Dashboard: create action (auth via token = customers.id OR panel admin invite token)
 app.post("/api/dashboard/action", async (req, res) => {
   try {
     const { token, type, payload } = req.body || {};
     if (!token || !type) return res.status(400).json({ success: false, error: "MISSING_FIELDS" });
 
-    // NEW: allow both customers and panel admins
     const identity = await resolvePanelIdentity(token);
     if (!identity) return res.status(401).json({ success: false, error: "UNAUTHORIZED" });
 
-    const license_key = identity.license_key;
     const id = "ACT-" + Date.now() + "-" + Math.floor(Math.random() * 9999);
-
-    pushAction(license_key, {
-      id,
-      type, // "kick" | "ban" | "dm" | "freeze"
-      payload: payload || {},
-      created_at: new Date().toISOString(),
+    pushAction(identity.license_key, {
+      id, type, payload: payload || {}, created_at: new Date().toISOString(),
     });
-
     return res.json({ success: true, id });
   } catch (e) {
     console.error("dashboard/action error:", e);
@@ -561,8 +419,6 @@ app.post("/api/dashboard/action", async (req, res) => {
   }
 });
 
-// FiveM: get actions (poll)
-// NOTE: clears queue after fetch
 app.get("/api/server/actions/:license", (req, res) => {
   const license_key = req.params.license;
   const list = actionQueue[license_key] || [];
@@ -570,18 +426,14 @@ app.get("/api/server/actions/:license", (req, res) => {
   return res.json({ success: true, actions: list });
 });
 
-/* ================= LOGS (Live + Persist) ================= */
-// In-memory logs for fast “live view”
-const serverLogs = {}; // { [license_key]: [{id,time,level,type,title,message,meta}] }
-
+/* ================= LOGS ================= */
+const serverLogs = {};
 function pushServerLog(license_key, item) {
   serverLogs[license_key] = serverLogs[license_key] || [];
   serverLogs[license_key].unshift(item);
   if (serverLogs[license_key].length > 300) serverLogs[license_key].length = 300;
 }
 
-// FiveM -> backend: send log
-// body: { license_key, level?, type?, title?, message, meta? }
 app.post("/api/server/log", async (req, res) => {
   try {
     const { license_key, level, type, title, message, meta } = req.body || {};
@@ -590,54 +442,38 @@ app.post("/api/server/log", async (req, res) => {
     }
 
     const resolvedLevel = level || "info";
-    const resolvedType  = type  || "log";
-
-    const playerName = meta?.name   || null;
-    const playerId   = meta?.server_id != null ? String(meta.server_id) : null;
+    const resolvedType = type || "log";
+    const playerName = meta?.name || null;
+    const playerId = meta?.server_id != null ? String(meta.server_id) : null;
 
     const item = {
-      id:    "LOG-" + Date.now() + "-" + Math.floor(Math.random() * 9999),
-      time:  new Date().toISOString(),
+      id: "LOG-" + Date.now() + "-" + Math.floor(Math.random() * 9999),
+      time: new Date().toISOString(),
       level: resolvedLevel,
-      type:  resolvedType,
+      type: resolvedType,
       title: title || "Server",
       message,
-      meta:  meta || null,
+      meta: meta || null,
     };
-
-    // 1) live memory
     pushServerLog(license_key, item);
 
-    // 2) persist to Supabase
     try {
-      await supabase.from("logs").insert([{
-        license_key,
-        level:       resolvedLevel,
-        type:        resolvedType,
-        title:       item.title,
-        message:     item.message,
-        player_name: playerName,
-        player_id:   playerId,
-        meta:        meta || null,
-      }]);
-    } catch (_) { /* ignore */ }
+      await q(
+        `INSERT INTO logs (license_key, level, type, title, message, player_name, player_id, meta)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [license_key, resolvedLevel, resolvedType, item.title, item.message, playerName, playerId, meta || null]
+      );
+    } catch (_) {}
 
     if (resolvedLevel === "alert" && playerId) {
-      const identifiersRaw = meta?.identifiers
-        ? Object.values(meta.identifiers).filter(Boolean)
-        : [];
-
+      const identifiersRaw = meta?.identifiers ? Object.values(meta.identifiers).filter(Boolean) : [];
       try {
-        await supabase.from("detections").insert([{
-          license_key,
-          player_name:    playerName || "Unknown",
-          player_id:      playerId,
-          identifiers:    identifiersRaw,
-          detection_type: resolvedType,
-          details:        message,
-          action_taken:   "alert",
-        }]);
-      } catch (_) { /* ignore */ }
+        await q(
+          `INSERT INTO detections (license_key, player_name, player_id, identifiers, detection_type, details, action_taken)
+           VALUES ($1, $2, $3, $4, $5, $6, 'alert')`,
+          [license_key, playerName || "Unknown", playerId, identifiersRaw, resolvedType, message]
+        );
+      } catch (_) {}
     }
 
     return res.json({ success: true });
@@ -650,31 +486,23 @@ app.post("/api/server/log", async (req, res) => {
 app.post("/api/server/detection", async (req, res) => {
   try {
     const {
-      license_key,
-      player_name,
-      player_id,
-      identifiers,
-      detection_type,
-      details,
-      action_taken,
-      ban_id,
+      license_key, player_name, player_id, identifiers,
+      detection_type, details, action_taken, ban_id,
     } = req.body || {};
 
     if (!license_key || !player_id || !detection_type) {
       return res.status(400).json({ success: false, error: "MISSING_FIELDS" });
     }
 
-    await supabase.from("detections").insert([{
-      license_key,
-      player_name:    player_name || "Unknown",
-      player_id:      String(player_id),
-      identifiers:    normalizeIdentifiers(identifiers),
-      detection_type,
-      details:        details || null,
-      action_taken:   action_taken || "alert",
-      ban_id:         ban_id || null,
-    }]);
-
+    await q(
+      `INSERT INTO detections (license_key, player_name, player_id, identifiers, detection_type, details, action_taken, ban_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        license_key, player_name || "Unknown", String(player_id),
+        normalizeIdentifiers(identifiers), detection_type,
+        details || null, action_taken || "alert", ban_id || null,
+      ]
+    );
     return res.json({ success: true });
   } catch (e) {
     console.error("server/detection error:", e);
@@ -682,58 +510,42 @@ app.post("/api/server/detection", async (req, res) => {
   }
 });
 
-// Dashboard -> get logs
-// returns BOTH "data" and "logs" to prevent UI mismatch
 app.get("/api/server/logs/:license", async (req, res) => {
   const license_key = req.params.license;
   const limit = Math.min(parseInt(req.query.limit || "200", 10), 500);
 
-  // Prefer DB logs if available, fallback to memory
   try {
-    const { data, error } = await supabase
-      .from("logs")
-      .select("id, license_key, level, type, title, message, meta, created_at")
-      .eq("license_key", license_key)
-      .order("created_at", { ascending: false })
-      .limit(limit);
-
-    if (!error && Array.isArray(data)) {
-      const mapped = data.map((x) => ({
-        id: x.id || ("DB-" + x.created_at),
-        time: x.created_at,
-        level: x.level || "info",
-        type: x.type || "log",
-        title: x.title || "Server",
-        message: x.message,
-        meta: x.meta ?? null,
-      }));
-
-      return res.json({ success: true, data: mapped, logs: mapped });
-    }
-  } catch (e) {
-    // ignore, fallback below
+    const data = await q(
+      `SELECT id, license_key, level, type, title, message, meta, created_at
+       FROM logs WHERE license_key = $1
+       ORDER BY created_at DESC LIMIT $2`,
+      [license_key, limit]
+    );
+    const mapped = data.map((x) => ({
+      id: x.id || "DB-" + x.created_at,
+      time: x.created_at,
+      level: x.level || "info",
+      type: x.type || "log",
+      title: x.title || "Server",
+      message: x.message,
+      meta: x.meta ?? null,
+    }));
+    return res.json({ success: true, data: mapped, logs: mapped });
+  } catch (_) {
+    const mem = (serverLogs[license_key] || []).slice(0, limit);
+    return res.json({ success: true, data: mem, logs: mem });
   }
-
-  const mem = (serverLogs[license_key] || []).slice(0, limit);
-  return res.json({ success: true, data: mem, logs: mem });
 });
 
-// Dashboard -> hämta detection_events
 app.get("/api/server/detections/events/:license", async (req, res) => {
   try {
     const license_key = req.params.license;
     const limit = Math.min(parseInt(req.query.limit || "200", 10), 500);
-
-    const { data, error } = await supabase
-      .from("detections")
-      .select("*")
-      .eq("license_key", license_key)
-      .order("created_at", { ascending: false })
-      .limit(limit);
-
-    if (error) return res.status(500).json({ success: false });
-
-    return res.json({ success: true, data: data || [] });
+    const data = await q(
+      "SELECT * FROM detections WHERE license_key = $1 ORDER BY created_at DESC LIMIT $2",
+      [license_key, limit]
+    );
+    return res.json({ success: true, data });
   } catch (e) {
     console.error("detections/events error:", e);
     return res.status(500).json({ success: false });
@@ -747,17 +559,11 @@ app.post("/api/login", async (req, res) => {
     if (!username || !password) return res.json({ success: false });
 
     const hash = sha256(password);
-
-    const { data: user, error } = await supabase
-  .from("customers")
-  .select("*")
-  .eq("username", username)
-  .eq("password", hash)
-  .eq("active", true) // 🔥 viktigt
-  .single();
-
-    if (error || !user) return res.json({ success: false });
-
+    const user = await qOne(
+      "SELECT * FROM customers WHERE username = $1 AND password = $2 AND active = true",
+      [username, hash]
+    );
+    if (!user) return res.json({ success: false });
     return res.json({ success: true, license_key: user.license_key, token: user.id });
   } catch (err) {
     console.error("login error:", err);
@@ -766,22 +572,15 @@ app.post("/api/login", async (req, res) => {
 });
 
 /* ================= CUSTOMER ================= */
-
-/* ================= CUSTOMER ================= */
 app.post("/customer/dashboard", async (req, res) => {
   try {
     const { token } = req.body || {};
     if (!token) return res.status(401).json({ success: false });
 
-    const { data: user } = await supabase.from("customers").select("*").eq("id", token).single();
+    const user = await qOne("SELECT * FROM customers WHERE id = $1", [token]);
     if (!user) return res.status(401).json({ success: false });
 
-    const { data: lic } = await supabase
-      .from("licenses")
-      .select("*")
-      .eq("license_key", user.license_key)
-      .single();
-
+    const lic = await qOne("SELECT * FROM licenses WHERE license_key = $1", [user.license_key]);
     if (!lic) return res.status(404).json({ success: false });
 
     return res.json({
@@ -799,10 +598,10 @@ app.post("/customer/toggle", async (req, res) => {
     const { token, status } = req.body || {};
     if (!token || !status) return res.status(400).json({ success: false });
 
-    const { data: user } = await supabase.from("customers").select("*").eq("id", token).single();
+    const user = await qOne("SELECT * FROM customers WHERE id = $1", [token]);
     if (!user) return res.status(401).json({ success: false });
 
-    await supabase.from("licenses").update({ status }).eq("license_key", user.license_key);
+    await q("UPDATE licenses SET status = $1 WHERE license_key = $2", [status, user.license_key]);
     return res.json({ success: true });
   } catch (err) {
     console.error("customer/toggle error:", err);
@@ -814,7 +613,6 @@ app.post("/customer/toggle", async (req, res) => {
 app.post("/admin/create-license", async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
-
     const { days_valid, lifetime, duration } = req.body || {};
 
     let expires_at = null;
@@ -834,19 +632,11 @@ app.post("/admin/create-license", async (req, res) => {
     }
 
     const license_key = generateLicenseKey();
-
-    await supabase.from("licenses").insert([
-      {
-        license_key,
-        status: "ACTIVE",
-        plan,
-        expires_at,
-        hwid: null
-      }
-    ]);
-
+    await q(
+      "INSERT INTO licenses (license_key, status, plan, expires_at, hwid) VALUES ($1, 'ACTIVE', $2, $3, NULL)",
+      [license_key, plan, expires_at]
+    );
     return res.json({ success: true, license_key });
-
   } catch (err) {
     console.error("admin/create-license error:", err);
     return res.status(500).json({ success: false });
@@ -856,9 +646,8 @@ app.post("/admin/create-license", async (req, res) => {
 app.get("/admin/licenses", async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
-
-    const { data } = await supabase.from("licenses").select("*").order("created_at", { ascending: false });
-    return res.json({ success: true, data: data || [] });
+    const data = await q("SELECT * FROM licenses ORDER BY created_at DESC");
+    return res.json({ success: true, data });
   } catch (err) {
     console.error("admin/licenses error:", err);
     return res.status(500).json({ success: false });
@@ -868,11 +657,9 @@ app.get("/admin/licenses", async (req, res) => {
 app.post("/admin/toggle-license", async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
-
     const { license_key, status } = req.body || {};
     if (!license_key || !status) return res.status(400).json({ success: false });
-
-    await supabase.from("licenses").update({ status }).eq("license_key", license_key);
+    await q("UPDATE licenses SET status = $1 WHERE license_key = $2", [status, license_key]);
     return res.json({ success: true });
   } catch (err) {
     console.error("admin/toggle-license error:", err);
@@ -880,114 +667,52 @@ app.post("/admin/toggle-license", async (req, res) => {
   }
 });
 
-
 app.delete("/admin/delete-license/:license_key", async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
-
     const { license_key } = req.params;
+    if (!license_key) return res.status(400).json({ success: false });
 
-    if (!license_key) {
-      return res.status(400).json({ success: false });
-    }
-
-    // 🔥 radera först kunder kopplade till licensen (valfritt men smart)
-    await supabase
-      .from("customers")
-      .delete()
-      .eq("license_key", license_key);
-
-    // 🔥 radera licensen
-    const { error } = await supabase
-      .from("licenses")
-      .delete()
-      .eq("license_key", license_key);
-
-    if (error) {
-      console.error(error);
-      return res.status(500).json({ success: false });
-    }
-
+    await q("DELETE FROM customers WHERE license_key = $1", [license_key]);
+    await q("DELETE FROM licenses WHERE license_key = $1", [license_key]);
     return res.json({ success: true });
-
   } catch (e) {
     console.error(e);
     return res.status(500).json({ success: false });
   }
 });
 
-
 app.post("/admin/create-customer", async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
-
     const { username, password, license_key } = req.body || {};
-
     if (!username || !password || !license_key) {
       return res.status(400).json({ success: false, error: "MISSING_FIELDS" });
     }
 
-    // kolla att license finns
-    const { data: lic } = await supabase
-      .from("licenses")
-      .select("*")
-      .eq("license_key", license_key)
-      .single();
-
-    if (!lic) {
-      return res.status(404).json({ success: false, error: "LICENSE_NOT_FOUND" });
-    }
+    const lic = await qOne("SELECT * FROM licenses WHERE license_key = $1", [license_key]);
+    if (!lic) return res.status(404).json({ success: false, error: "LICENSE_NOT_FOUND" });
 
     const password_hash = sha256(password);
-
-    const { data, error } = await supabase
-      .from("customers")
-      .insert([
-        {
-          username,
-          password: password_hash,
-          license_key,
-        },
-      ])
-      .select()
-      .single();
-
-    if (error) {
-      console.error("create-customer error:", error);
-      return res.status(500).json({ success: false, error: "DB_ERROR" });
-    }
-
-    return res.json({ success: true, customer: data });
+    const customer = await qOne(
+      "INSERT INTO customers (username, password, license_key) VALUES ($1, $2, $3) RETURNING *",
+      [username, password_hash, license_key]
+    );
+    return res.json({ success: true, customer });
   } catch (err) {
     console.error("admin/create-customer error:", err);
     return res.status(500).json({ success: false });
   }
 });
 
-
 app.post("/admin/update-customer-password", async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
-
     const { id, new_password } = req.body || {};
-    if (!id || !new_password) {
-      return res.status(400).json({ success: false });
-    }
+    if (!id || !new_password) return res.status(400).json({ success: false });
 
-    const password_hash = sha256(new_password);
-
-    const { error } = await supabase
-      .from("customers")
-      .update({ password: password_hash })
-      .eq("id", id);
-
-    if (error) {
-      console.error(error);
-      return res.status(500).json({ success: false });
-    }
-
+    await q("UPDATE customers SET password = $1 WHERE id = $2", [sha256(new_password), id]);
     return res.json({ success: true });
-
   } catch (e) {
     console.error(e);
     return res.status(500).json({ success: false });
@@ -997,25 +722,11 @@ app.post("/admin/update-customer-password", async (req, res) => {
 app.post("/admin/toggle-customer", async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
-
     const { id, active } = req.body;
+    if (!id || typeof active !== "boolean") return res.status(400).json({ success: false });
 
-    if (!id || typeof active !== "boolean") {
-      return res.status(400).json({ success: false });
-    }
-
-    const { error } = await supabase
-      .from("customers")
-      .update({ active }) // 🔥 VIKTIGT
-      .eq("id", id);
-
-    if (error) {
-      console.error(error);
-      return res.status(500).json({ success: false });
-    }
-
+    await q("UPDATE customers SET active = $1 WHERE id = $2", [active, id]);
     return res.json({ success: true });
-
   } catch (e) {
     console.error(e);
     return res.status(500).json({ success: false });
@@ -1025,92 +736,50 @@ app.post("/admin/toggle-customer", async (req, res) => {
 app.delete("/admin/delete-customer/:id", async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
-
-    const { id } = req.params;
-
-    const { error } = await supabase
-      .from("customers")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      console.error(error);
-      return res.status(500).json({ success: false });
-    }
-
+    await q("DELETE FROM customers WHERE id = $1", [req.params.id]);
     return res.json({ success: true });
-
   } catch (e) {
     console.error(e);
     return res.status(500).json({ success: false });
   }
 });
 
-
-// kund sparars 
 app.get("/admin/customers", async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
-
-    const { data, error } = await supabase
-      .from("customers")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error(error);
-      return res.status(500).json({ success: false });
-    }
-
+    const data = await q("SELECT * FROM customers ORDER BY created_at DESC");
     return res.json({ success: true, data });
-
   } catch (err) {
     console.error(err);
     return res.status(500).json({ success: false });
   }
 });
 
-// Detection settings hanteras i config.lua — inga endpoints behövs
-
-
-app.get("/version", (req, res) => {
+app.get("/version", (_req, res) => {
   res.json({
     version: "3.1.0",
-    download: "https://ghostguardac.se/download",
-    notes: "Stability improvements & detection optimizations"
+    download: (PUBLIC_URL || "") + "/download",
+    notes: "Stability improvements & detection optimizations",
   });
 });
 
-/* ================= ADMIN STATS ================= */
 app.get("/admin/stats", async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
-
-    const [
-      { count: totalLicenses },
-      { count: activeLicenses },
-      { count: totalCustomers },
-      { count: activeCustomers },
-      { count: totalBans },
-      { count: activeBans },
-    ] = await Promise.all([
-      supabase.from("licenses").select("*", { count: "exact", head: true }),
-      supabase.from("licenses").select("*", { count: "exact", head: true }).eq("status", "ACTIVE"),
-      supabase.from("customers").select("*", { count: "exact", head: true }),
-      supabase.from("customers").select("*", { count: "exact", head: true }).eq("active", true),
-      supabase.from("bans").select("*", { count: "exact", head: true }),
-      supabase.from("bans").select("*", { count: "exact", head: true }).eq("active", true),
+    const [tl, al, tc, ac, tb, ab] = await Promise.all([
+      qOne("SELECT count(*)::int AS c FROM licenses"),
+      qOne("SELECT count(*)::int AS c FROM licenses WHERE status = 'ACTIVE'"),
+      qOne("SELECT count(*)::int AS c FROM customers"),
+      qOne("SELECT count(*)::int AS c FROM customers WHERE active = true"),
+      qOne("SELECT count(*)::int AS c FROM bans"),
+      qOne("SELECT count(*)::int AS c FROM bans WHERE active = true"),
     ]);
-
     return res.json({
       success: true,
       stats: {
-        totalLicenses: totalLicenses || 0,
-        activeLicenses: activeLicenses || 0,
-        totalCustomers: totalCustomers || 0,
-        activeCustomers: activeCustomers || 0,
-        totalBans: totalBans || 0,
-        activeBans: activeBans || 0,
+        totalLicenses: tl.c, activeLicenses: al.c,
+        totalCustomers: tc.c, activeCustomers: ac.c,
+        totalBans: tb.c, activeBans: ab.c,
       },
     });
   } catch (e) {
@@ -1119,39 +788,29 @@ app.get("/admin/stats", async (req, res) => {
   }
 });
 
-/* ================= ADMIN ALL BANS ================= */
 app.get("/admin/bans", async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
-
-    const { data, error } = await supabase
-      .from("bans")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(500);
-
-    if (error) return res.status(500).json({ success: false });
-    return res.json({ success: true, data: data || [] });
+    const data = await q(
+      "SELECT ban_id, license_key, player_id, player_name, identifiers, reason, duration, banned_by, evidence_url, active, expires_at, unbanned_at, unbanned_by, created_at FROM bans ORDER BY created_at DESC LIMIT 500"
+    );
+    return res.json({ success: true, data });
   } catch (e) {
     console.error("admin/bans error:", e);
     return res.status(500).json({ success: false });
   }
 });
 
-/* ================= ADMIN UNBAN ================= */
 app.post("/admin/unban", async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
-
     const { ban_id } = req.body || {};
     if (!ban_id) return res.status(400).json({ success: false, error: "MISSING_BAN_ID" });
 
-    const { error } = await supabase
-      .from("bans")
-      .update({ active: false, unbanned_at: new Date().toISOString(), unbanned_by: "Admin Panel" })
-      .eq("ban_id", ban_id);
-
-    if (error) return res.status(500).json({ success: false });
+    await q(
+      "UPDATE bans SET active = false, unbanned_at = now(), unbanned_by = 'Admin Panel' WHERE ban_id = $1",
+      [ban_id]
+    );
     return res.json({ success: true });
   } catch (e) {
     console.error("admin/unban error:", e);
@@ -1159,24 +818,16 @@ app.post("/admin/unban", async (req, res) => {
   }
 });
 
-/* ================= ADMIN SERVER OVERVIEW ================= */
 app.get("/admin/servers", async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
-
-    const { data, error } = await supabase
-      .from("server_overview")
-      .select("*");
-
-    if (error) return res.status(500).json({ success: false });
-    return res.json({ success: true, data: data || [] });
+    const data = await q("SELECT * FROM server_overview");
+    return res.json({ success: true, data });
   } catch (e) {
     console.error("admin/servers error:", e);
     return res.status(500).json({ success: false });
   }
 });
-
-
 
 /* ================= START ================= */
 app.listen(PORT, () => console.log("GhostGuard backend running on", PORT));

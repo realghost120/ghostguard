@@ -1,839 +1,839 @@
-<!DOCTYPE html>
-<html lang="sv">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>GhostGuard – Anticheat Panel</title>
-  <!-- Inter font & lucide -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <style>
-    /* ===== RESET & ny tema — EXAKT STIL från landningssidan ===== */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Inter', sans-serif;
-    }
-
-    body {
-      background: radial-gradient(circle at top, #0c2448, #020617 70%);
-      color: white;
-      min-height: 100vh;
-      display: flex;
-      overflow-x: hidden;
-    }
-
-    /* rutnätsbakgrund (identisk med preview) */
-    body::before {
-      content: "";
-      position: fixed;
-      width: 100%;
-      height: 100%;
-      background-image:
-        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-      background-size: 60px 60px;
-      z-index: -1;
-      pointer-events: none;
-    }
-
-    /* ===== SIDEBAR — omarbetad med navbar-estetik ===== */
-    .sidebar {
-      width: 260px;
-      background: rgba(2, 6, 23, 0.85);
-      backdrop-filter: blur(12px);
-      border-right: 1px solid rgba(255, 255, 255, 0.05);
-      padding: 30px 16px;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 20px 40px -10px rgba(0,0,0,0.6);
-      z-index: 10;
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 22px;
-      font-weight: 700;
-      margin-bottom: 40px;
-      padding-left: 10px;
-      color: #bcd6ff;
-      letter-spacing: -0.3px;
-    }
-
-    .logo i {
-      color: #3b82f6;
-    }
-
-    .nav {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 12px 16px;
-      border-radius: 10px;
-      cursor: pointer;
-      margin-bottom: 6px;
-      color: #9fb3d9;
-      font-size: 15px;
-      font-weight: 500;
-      transition: all 0.2s ease;
-      border: 1px solid transparent;
-    }
-
-    .nav:hover {
-      background: rgba(255, 255, 255, 0.04);
-      border-color: rgba(59, 130, 246, 0.2);
-      color: white;
-    }
-
-    .nav.active {
-      background: rgba(29, 78, 216, 0.25);
-      border-color: rgba(59, 130, 246, 0.4);
-      color: white;
-      font-weight: 600;
-      backdrop-filter: blur(5px);
-    }
-
-    /* support-knapp i sidebar (längst ner) */
-    .support-nav {
-      margin-top: auto;
-      border-top: 1px solid rgba(255,255,255,0.05);
-      padding-top: 20px;
-    }
-
-    /* ===== HUVUDINNEHÅLL ===== */
-    .content {
-      flex: 1;
-      padding: 40px 48px;
-      overflow-y: auto;
-    }
-
-    /* rubrik med ikon */
-    .page-header {
-      margin-bottom: 32px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .page-header h2 {
-      font-size: 28px;
-      font-weight: 600;
-      color: #d6e4ff;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .subtitle {
-      color: #7f96c0;
-      font-size: 15px;
-      margin-left: 8px;
-    }
-
-    /* ===== GRID & KORT (genomskinliga med blur, samma stil som feature-card) ===== */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-      gap: 24px;
-    }
-
-    .card {
-      background: rgba(2, 6, 23, 0.7);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.04);
-      border-radius: 24px;
-      padding: 28px;
-      box-shadow: 0 12px 30px -10px rgba(0,0,0,0.6);
-      transition: transform 0.2s ease, border-color 0.2s;
-    }
-
-    .card:hover {
-      border-color: rgba(59, 130, 246, 0.25);
-      transform: translateY(-0px);
-    }
-
-    .card h3 {
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 24px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: #e0edff;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-      padding-bottom: 12px;
-    }
-
-    /* info-rader */
-    .info-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.02);
-      font-size: 14px;
-    }
-
-    .info-row strong {
-      width: 110px;
-      color: #bcd6ff;
-      font-weight: 500;
-    }
-
-    .info-row span {
-      color: #d6e4ff;
-    }
-
-    /* license-specifik */
-    .license-section {
-      background: rgba(0,0,0,0.25);
-      border-radius: 16px;
-      padding: 16px;
-      margin-bottom: 16px;
-      border: 1px solid rgba(255,255,255,0.03);
-    }
-
-    .license-row {
-      display: flex;
-      gap: 10px;
-      margin-top: 8px;
-    }
-
-    .license-box {
-      flex: 1;
-      background: #020617;
-      border: 1px solid rgba(255,255,255,0.1);
-      padding: 12px 14px;
-      border-radius: 10px;
-      font-family: monospace;
-      font-size: 14px;
-      color: #cbd5f5;
-      letter-spacing: 0.5px;
-    }
-
-    .btn.modal-confirm {
-      background: #1d4ed8;
-      border: none;
-      padding: 0 18px;
-      border-radius: 10px;
-      color: white;
-      font-weight: 600;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: background 0.2s;
-    }
-
-    .btn.modal-confirm:hover {
-      background: #256ef0;
-    }
-
-    /* status badges */
-    .status-online {
-      color: #22c55e;
-      font-weight: 600;
-    }
-
-    .status-offline {
-      color: #ef4444;
-      font-weight: 600;
-    }
-
-    /* PLAYER CARDS */
-    #playerList {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .player-card {
-      background: rgba(2, 6, 23, 0.6);
-      backdrop-filter: blur(4px);
-      border: 1px solid rgba(255,255,255,0.04);
-      border-radius: 16px;
-      padding: 16px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      transition: 0.2s;
-    }
-
-    .player-card:hover {
-      background: rgba(15, 23, 42, 0.8);
-      border-color: rgba(59,130,246,0.3);
-    }
-
-    .player-name {
-      font-weight: 600;
-      color: white;
-      margin-right: 12px;
-    }
-
-    .player-id {
-      color: #9fb3d9;
-      font-size: 13px;
-    }
-
-    .player-actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    .btn-kick, .btn-ban {
-      padding: 6px 14px;
-      border-radius: 30px;
-      font-size: 12px;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      transition: 0.2s;
-      border: 1px solid transparent;
-    }
-
-    .btn-kick {
-      background: #d97706;
-      color: white;
-    }
-    .btn-kick:hover { background: #b45309; }
-
-    .btn-ban {
-      background: #dc2626;
-      color: white;
-    }
-    .btn-ban:hover { background: #b91c1c; }
-
-    /* LOG CARDS */
-    #logList {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .log-card {
-      background: rgba(2, 6, 23, 0.6);
-      backdrop-filter: blur(4px);
-      border-radius: 14px;
-      padding: 14px 18px;
-      border-left: 5px solid #3b82f6;
-      font-size: 13px;
-      transition: 0.2s;
-      border: 1px solid rgba(255,255,255,0.03);
-    }
-
-    .log-card:hover {
-      background: #0f1a2f;
-      transform: translateX(0px);
-    }
-
-    .log-time {
-      font-weight: 600;
-      color: #9fb3c8;
-      margin-right: 10px;
-    }
-
-    .log-type {
-      background: rgba(255,255,255,0.05);
-      padding: 2px 10px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 600;
-    }
-
-    .log-join { border-left-color: #22c55e; }
-    .log-leave { border-left-color: #f1c40f; }
-    .log-ban { border-left-color: #ef4444; }
-    .log-detect { border-left-color: #3b82f6; }
-
-    /* BAN CARDS */
-    #banList {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-top: 12px;
-    }
-
-    .ban-card {
-      background: rgba(2, 6, 23, 0.7);
-      backdrop-filter: blur(6px);
-      border: 1px solid rgba(255,255,255,0.04);
-      border-radius: 20px;
-      padding: 18px 22px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      transition: 0.2s;
-    }
-
-    .ban-card:hover {
-      border-color: rgba(59,130,246,0.3);
-      background: #0b1429;
-    }
-
-    .ban-reason {
-      font-size: 16px;
-      font-weight: 600;
-      color: #f0f4ff;
-    }
-
-    .ban-id {
-      font-size: 12px;
-      color: #9fb3d9;
-      margin-top: 4px;
-    }
-
-    .unban-btn {
-      background: #1d4ed8;
-      border: none;
-      color: white;
-      padding: 8px 16px;
-      border-radius: 30px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-
-    .unban-btn:hover {
-      background: #256ef0;
-      transform: scale(1.02);
-    }
-
-    /* DOWNLOAD-sida */
-    .primary-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 12px;
-      background: #1d4ed8;
-      color: white;
-      padding: 12px 28px;
-      border-radius: 40px;
-      text-decoration: none;
-      font-weight: 600;
-      margin: 16px 0 24px 0;
-      transition: 0.2s;
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-
-    .primary-link:hover {
-      background: #256ef0;
-      transform: translateY(-0px);
-    }
-
-    .info-block {
-      background: rgba(0,0,0,0.3);
-      border: 1px solid rgba(255,255,255,0.04);
-      padding: 20px;
-      border-radius: 18px;
-      line-height: 1.8;
-    }
-
-    .install-steps > div {
-      background: rgba(0,0,0,0.2);
-      border: 1px solid rgba(255,255,255,0.03);
-      border-radius: 16px;
-      padding: 18px;
-      margin-bottom: 10px;
-    }
-
-    .code-box {
-      background: #020617;
-      border: 1px solid #1e2b41;
-      padding: 10px 14px;
-      border-radius: 12px;
-      font-family: monospace;
-      font-size: 12px;
-      color: #aac8ff;
-      margin-top: 8px;
-    }
-
-    .divider {
-      border: none;
-      border-top: 1px solid rgba(255,255,255,0.06);
-      margin: 30px 0;
-    }
-
-    /* MODAL — samma tema */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.8);
-      backdrop-filter: blur(6px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 999;
-    }
-
-    .modal {
-      width: 440px;
-      background: rgba(2, 6, 23, 0.95);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 28px;
-      padding: 30px;
-      backdrop-filter: blur(20px);
-    }
-
-    .modal h3 {
-      font-size: 20px;
-      margin-bottom: 20px;
-      color: #d6e4ff;
-    }
-
-    .modal input {
-      width: 100%;
-      padding: 12px 16px;
-      background: #020617;
-      border: 1px solid #1e2b41;
-      border-radius: 12px;
-      color: white;
-      margin-bottom: 16px;
-    }
-
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-    }
-
-    .modal-cancel {
-      background: transparent;
-      border: 1px solid rgba(255,255,255,0.15);
-      padding: 8px 18px;
-      border-radius: 30px;
-      color: white;
-      font-weight: 500;
-      cursor: pointer;
-    }
-
-    .modal-confirm {
-      background: #1d4ed8;
-      border: none;
-      padding: 8px 22px;
-      border-radius: 30px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    /* lite småfix */
-    .muted {
-      color: #9fb3d9;
-    }
-
-    .status-badge {
-      background: rgba(34,197,94,0.15);
-      color: #4ade80;
-      padding: 4px 12px;
-      border-radius: 30px;
-      font-size: 12px;
-    }
-  </style>
-</head>
-<body>
-  <div id="actionModal" style="display:none;"></div>
-
-  <!-- SIDEBAR (ny navbar-look) -->
-  <div class="sidebar">
-    <div class="logo">
-      <i data-lucide="shield"></i>
-      <span>GhostGuard</span>
-    </div>
-
-    <div class="nav active" onclick="showView('dashboard', this)">
-      <i data-lucide="layout-dashboard"></i>
-      <span>Dashboard</span>
-    </div>
-    <div class="nav" onclick="showView('players', this)">
-      <i data-lucide="users"></i>
-      <span>Players</span>
-    </div>
-    <div class="nav" onclick="showView('logs', this)">
-      <i data-lucide="file-text"></i>
-      <span>Server Logs</span>
-    </div>
-    <div class="nav" onclick="showView('bans', this)">
-      <i data-lucide="shield-alert"></i>
-      <span>Ban List</span>
-    </div>
-    <div class="nav" onclick="showView('download', this)">
-      <i data-lucide="download"></i>
-      <span>Download</span>
-    </div>
-
-    <div class="support-nav">
-      <div class="nav" onclick="openSupport(event)">
-        <i data-lucide="life-buoy"></i>
-        <span>Support</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- HUVUDINNEHÅLL -->
-  <div class="content">
-    <!-- header med ikon + subtitle (valfritt) -->
-    <div class="page-header">
-      <h2><i data-lucide="layout-dashboard"></i> Dashboard</h2>
-      <span class="subtitle">GhostGuard Control Panel</span>
-    </div>
-
-    <!-- DASHBOARD VIEW -->
-    <div id="dashboardView">
-      <div class="grid">
-        <!-- LICENSE CARD -->
-        <div class="card">
-          <h3><i data-lucide="key-round"></i> License Information</h3>
-          <div class="license-section">
-            <div class="info-row" style="border:none; padding-top:0;"><i data-lucide="key"></i> License Key</div>
-            <div class="license-row">
-              <div id="licenseKeyDisplay" class="license-box">Loading...</div>
-              <button class="btn modal-confirm" onclick="copyLicense()"><i data-lucide="copy"></i></button>
-            </div>
-          </div>
-          <div class="info-row"><i data-lucide="activity"></i><strong>Status:</strong> <span id="licenseStatus">Loading...</span></div>
-          <div class="info-row"><i data-lucide="package"></i><strong>Plan:</strong> <span id="licensePlan">-</span></div>
-          <div class="info-row"><i data-lucide="calendar"></i><strong>Expires:</strong> <span id="licenseExpire">-</span></div>
-          <div class="info-row"><i data-lucide="clock"></i><strong>Days Remaining:</strong> <span id="licenseDays">-</span></div>
-        </div>
-
-        <!-- SERVER STATUS -->
-        <div class="card">
-          <h3><i data-lucide="server"></i> Server Status</h3>
-          <div class="info-row"><i data-lucide="power"></i><strong>Status:</strong> <span id="serverStatus">Loading...</span></div>
-          <div class="info-row"><i data-lucide="users"></i><strong>Online Players:</strong> <span id="playerCountDash">0</span></div>
-          <div class="info-row"><i data-lucide="link"></i><strong>License Bound:</strong> <span id="boundServer">Active</span></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- PLAYERS VIEW -->
-    <div id="playersView" style="display:none;">
-      <div class="card">
-        <h3><i data-lucide="users"></i> Online Players</h3>
-        <div id="playerList"></div>
-      </div>
-    </div>
-
-    <!-- LOGS VIEW -->
-    <div id="logsView" style="display:none;">
-      <div class="card">
-        <h3><i data-lucide="scroll-text"></i> Live Server Logs</h3>
-        <div id="logList"></div>
-      </div>
-    </div>
-
-    <!-- BANS VIEW -->
-    <div id="bansView" style="display:none;">
-      <div class="card" style="margin-bottom:0;">
-        <h3><i data-lucide="shield-alert"></i> Banned Players</h3>
-      </div>
-      <div id="banList"></div>
-    </div>
-
-    <!-- DOWNLOAD VIEW -->
-    <div id="downloadView" style="display:none;">
-      <div class="card">
-        <h3><i data-lucide="download"></i> Download Center</h3>
-        <div class="info-block">
-          <i data-lucide="tag"></i> <strong>Current Version:</strong> v3.1.1<br>
-          <i data-lucide="check-circle"></i> <strong>Status:</strong> <span class="status-online">Stable</span>
-        </div>
-        <a href="/download/" target="_blank" class="primary-link">
-          <i data-lucide="download"></i> Download GhostGuard
-        </a>
-        <hr class="divider">
-        <h3 style="margin-top:0;"><i data-lucide="book-open"></i> Installation Guide</h3>
-        <div class="install-steps">
-          <div><strong><i data-lucide="arrow-down"></i> Step 1 — Download</strong><div class="muted">Download the latest GhostGuard package.   - Password: ghostguard202603</div></div>
-          <div><strong><i data-lucide="folder"></i> Step 2 — Extract Files</strong><div class="muted">Extract the downloaded .zip file.</div></div>
-          <div><strong><i data-lucide="server"></i> Step 3 — Move to Server</strong><div class="muted">Place folder inside:</div><div class="code-box">resources/[ghostguard]/</div></div>
-          <div><strong><i data-lucide="settings"></i> Step 4 — Edit server.cfg</strong><div class="muted">Add this line:</div><div class="code-box">ensure GhostGuard-Anticheat</div></div>
-          <div><strong><i data-lucide="key"></i> Step 5 — Insert License</strong><div class="muted">Edit <code>config.lua</code>:</div><div class="code-box">Config.LicenseKey = "GG-XXXX-XXXX"</div></div>
-          <div><strong><i data-lucide="refresh-ccw"></i> Step 6 — Restart Server</strong><div class="muted">Restart your FiveM server.</div></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // All JavaScript är exakt samma som förut — inga funktioner ändrade
-    const API = "https://ghostgaurd-becakd.onrender.com";
-    const licenseKey = localStorage.getItem("gg_license_key") || "";
-    const token = localStorage.getItem("gg_token") || "";
-
-    function escapeHTML(str) {
-      if (!str) return "";
-      return str.replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' })[m]);
-    }
-
-    function showView(view, el) {
-      document.querySelectorAll(".nav").forEach(n => n.classList.remove("active"));
-      if (el) el.classList.add("active");
-      ["dashboard","players","logs","bans","download"].forEach(v => {
-        const viewEl = document.getElementById(v + "View");
-        if (viewEl) viewEl.style.display = "none";
-      });
-      const active = document.getElementById(view + "View");
-      if (active) active.style.display = "block";
-      reRenderIcons();
-    }
-
-    async function fetchLicense() {
-      if (!token) return;
-      try {
-        const res = await fetch(API + "/customer/dashboard", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token })
-        });
-        const data = await res.json();
-        if (!data.success) return;
-        const lic = data.data;
-        document.getElementById("licenseStatus").innerText = lic.status;
-        document.getElementById("licenseKeyDisplay").innerText = lic.license_key || licenseKey;
-        if (!lic.expires_at) {
-          document.getElementById("licenseExpire").innerText = "Lifetime";
-          document.getElementById("licensePlan").innerText = "Lifetime";
-          document.getElementById("licenseDays").innerText = "∞";
-          return;
-        }
-        const expireDate = new Date(lic.expires_at);
-        const now = new Date();
-        const diff = Math.ceil((expireDate - now) / (1000 * 60 * 60 * 24));
-        document.getElementById("licenseExpire").innerText = expireDate.toLocaleDateString();
-        document.getElementById("licenseDays").innerText = diff > 0 ? diff + " days" : "Expired";
-      } catch (e) { console.error("License error:", e); }
-    }
-
-    async function fetchServer() {
-      if (!licenseKey) return;
-      try {
-        const res = await fetch(API + "/api/server/status/" + licenseKey);
-        const data = await res.json();
-        const statusEl = document.getElementById("serverStatus");
-        statusEl.innerText = data.online ? "Online" : "Offline";
-        statusEl.className = data.online ? "status-online" : "status-offline";
-        document.getElementById("playerCountDash").innerText = data.players || 0;
-      } catch (e) { console.error("Server error:", e); }
-    }
-
-    async function fetchPlayers() {
-      if (!licenseKey) return;
-      try {
-        const res = await fetch(API + "/api/server/players/" + licenseKey);
-        const data = await res.json();
-        const players = data.players || [];
-        document.getElementById("playerList").innerHTML = players.map(p => `
-          <div class="player-card">
-            <div><span class="player-name">${escapeHTML(p.name)}</span> <span class="player-id">ID: ${p.id}</span></div>
-            <div class="player-actions">
-              <button class="btn-kick" onclick="openModal('kick', ${p.id})">Kick</button>
-              <button class="btn-ban" onclick="openModal('ban', ${p.id})">Ban</button>
-            </div>
-          </div>`).join("");
-      } catch (e) { console.error("Players error:", e); }
-    }
-
-    async function fetchLogs() {
-      if (!licenseKey) return;
-      try {
-        const res = await fetch(API + "/api/server/logs/" + licenseKey);
-        const data = await res.json();
-        const logs = (data.data || []).slice(0, 50);
-        document.getElementById("logList").innerHTML = logs.map(l => {
-          let typeClass = "log-info", typeLabel = "INFO";
-          const msg = (l.message || "").toLowerCase();
-          if (msg.includes("joined")) { typeClass = "log-join"; typeLabel = "JOIN"; }
-          else if (msg.includes("left")) { typeClass = "log-leave"; typeLabel = "LEAVE"; }
-          else if (msg.includes("ban")) { typeClass = "log-ban"; typeLabel = "BAN"; }
-          else if (msg.includes("explosion") || msg.includes("speed") || msg.includes("noclip")) { typeClass = "log-detect"; typeLabel = "DETECTION"; }
-          return `<div class="log-card"><div><span class="log-time">${new Date(l.time).toLocaleTimeString()}</span> <span class="log-type ${typeClass}">${typeLabel}</span></div><div>${escapeHTML(l.message)}</div></div>`;
-        }).join("");
-      } catch (e) { console.error("Logs error:", e); }
-    }
-
-    async function fetchBans() {
-      if (!licenseKey) return;
-      try {
-        const res = await fetch(API + "/api/server/bans/" + licenseKey);
-        const data = await res.json();
-        const bans = data.bans || [];
-        document.getElementById("banList").innerHTML = bans.map(b => {
-          let evidenceButton = b.evidence_url ? `<button class="btn-kick" onclick="viewEvidence('${b.evidence_url}')">Evidence</button>` : "";
-          return `<div class="ban-card"><div><div class="ban-reason">${escapeHTML(b.reason)}</div><div class="ban-id">Ban ID: ${b.ban_id}</div></div><div style="display:flex; gap:10px;">${evidenceButton}<button class="unban-btn" onclick="unban('${b.ban_id}')">Unban</button></div></div>`;
-        }).join("");
-      } catch (e) { console.error("Bans error:", e); }
-    }
-
-    async function send(type, payload) {
-      try {
-        const res = await fetch(API + "/api/dashboard/action", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token, type, payload })
-        });
-        const data = await res.json();
-        return data.success;
-      } catch (e) { console.error("Send error:", e); return false; }
-    }
-
-    function openModal(type, playerId) {
-      const modal = document.getElementById("actionModal");
-      modal.innerHTML = `<div class="modal-overlay"><div class="modal"><h3>${type === "kick" ? "Kick Player" : "Ban Player"}</h3><input id="reasonInput" placeholder="Reason..." />${type === "ban" ? '<input id="durationInput" placeholder="Duration (30m,2h,7d,P)" />' : ""}<div class="modal-actions"><button class="modal-cancel" onclick="closeModal()">Cancel</button><button class="modal-confirm" id="confirmBtn">Confirm</button></div></div></div>`;
-      modal.style.display = "block";
-      document.getElementById("confirmBtn").onclick = () => confirmAction(type, playerId);
-      reRenderIcons();
-    }
-
-    function closeModal() { document.getElementById("actionModal").style.display = "none"; }
-
-    async function confirmAction(type, playerId) {
-      const btn = document.getElementById("confirmBtn");
-      btn.disabled = true; btn.innerText = "Processing...";
-      const reason = document.getElementById("reasonInput").value.trim();
-      if (!reason) { alert("Reason required"); btn.disabled = false; btn.innerText = "Confirm"; return; }
-      let payload = { player: playerId, reason };
-      if (type === "ban") {
-        const duration = document.getElementById("durationInput").value.trim();
-        if (!duration) { alert("Duration required"); btn.disabled = false; btn.innerText = "Confirm"; return; }
-        payload.duration = duration;
-      }
-      const ok = await send(type, payload);
-      if (ok) { closeModal(); fetchBans(); } 
-      else { alert("Action failed"); btn.disabled = false; btn.innerText = "Confirm"; }
-    }
-
-    function viewEvidence(url) {
-      const modal = document.getElementById("actionModal");
-      modal.innerHTML = `<div class="modal-overlay"><div class="modal" style="width:700px;"><h3>Ban Evidence</h3><img src="${url}" style="width:100%; border-radius:12px; margin-top:10px;"><div class="modal-actions"><button class="modal-cancel" onclick="closeModal()">Close</button></div></div></div>`;
-      modal.style.display = "block";
-    }
-
-    async function unban(banId) {
-      if (!banId || !confirm("Are you sure you want to unban this player?")) return;
-      try {
-        const res = await fetch(API + "/api/server/unban/" + banId, { method: "DELETE", headers: { "Authorization": "Bearer " + token } });
-        const data = await res.json();
-        if (data.success) { 
-          const card = document.querySelector(`[onclick="unban('${banId}')"]`)?.closest(".ban-card");
-          if (card) card.remove();
-          fetchBans();
-        } else { alert("Unban failed: " + (data.error || "unknown error")); }
-      } catch (e) { console.error("Unban error:", e); }
-    }
-
-    function openSupport(e) { e.stopPropagation(); window.open("https://discord.com/invite/e433wMpEeW", "_blank"); }
-    function copyLicense() { navigator.clipboard?.writeText(document.getElementById("licenseKeyDisplay").innerText); alert("License copied!"); }
-    function reRenderIcons() { if (window.lucide) lucide.createIcons(); }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      reRenderIcons();
-      fetchLicense(); fetchServer(); fetchPlayers(); fetchLogs(); fetchBans();
-      setInterval(fetchServer, 5000);
-      setInterval(fetchPlayers, 3000);
-      setInterval(fetchLogs, 3000);
-      setInterval(fetchBans, 5000);
-    });
-  </script>
-</body>
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GhostGuard – Anticheat Panel</title>
+  <!-- Inter font & lucide -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* ===== RESET & ny tema — EXAKT STIL från landningssidan ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at top, #0c2448, #020617 70%);
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      overflow-x: hidden;
+    }
+
+    /* rutnätsbakgrund (identisk med preview) */
+    body::before {
+      content: "";
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    /* ===== SIDEBAR — omarbetad med navbar-estetik ===== */
+    .sidebar {
+      width: 260px;
+      background: rgba(2, 6, 23, 0.85);
+      backdrop-filter: blur(12px);
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 30px 16px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 40px -10px rgba(0,0,0,0.6);
+      z-index: 10;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 40px;
+      padding-left: 10px;
+      color: #bcd6ff;
+      letter-spacing: -0.3px;
+    }
+
+    .logo i {
+      color: #3b82f6;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-bottom: 6px;
+      color: #9fb3d9;
+      font-size: 15px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+    }
+
+    .nav:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(59, 130, 246, 0.2);
+      color: white;
+    }
+
+    .nav.active {
+      background: rgba(29, 78, 216, 0.25);
+      border-color: rgba(59, 130, 246, 0.4);
+      color: white;
+      font-weight: 600;
+      backdrop-filter: blur(5px);
+    }
+
+    /* support-knapp i sidebar (längst ner) */
+    .support-nav {
+      margin-top: auto;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      padding-top: 20px;
+    }
+
+    /* ===== HUVUDINNEHÅLL ===== */
+    .content {
+      flex: 1;
+      padding: 40px 48px;
+      overflow-y: auto;
+    }
+
+    /* rubrik med ikon */
+    .page-header {
+      margin-bottom: 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .page-header h2 {
+      font-size: 28px;
+      font-weight: 600;
+      color: #d6e4ff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .subtitle {
+      color: #7f96c0;
+      font-size: 15px;
+      margin-left: 8px;
+    }
+
+    /* ===== GRID & KORT (genomskinliga med blur, samma stil som feature-card) ===== */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 24px;
+    }
+
+    .card {
+      background: rgba(2, 6, 23, 0.7);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 12px 30px -10px rgba(0,0,0,0.6);
+      transition: transform 0.2s ease, border-color 0.2s;
+    }
+
+    .card:hover {
+      border-color: rgba(59, 130, 246, 0.25);
+      transform: translateY(-0px);
+    }
+
+    .card h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #e0edff;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding-bottom: 12px;
+    }
+
+    /* info-rader */
+    .info-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.02);
+      font-size: 14px;
+    }
+
+    .info-row strong {
+      width: 110px;
+      color: #bcd6ff;
+      font-weight: 500;
+    }
+
+    .info-row span {
+      color: #d6e4ff;
+    }
+
+    /* license-specifik */
+    .license-section {
+      background: rgba(0,0,0,0.25);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(255,255,255,0.03);
+    }
+
+    .license-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .license-box {
+      flex: 1;
+      background: #020617;
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-family: monospace;
+      font-size: 14px;
+      color: #cbd5f5;
+      letter-spacing: 0.5px;
+    }
+
+    .btn.modal-confirm {
+      background: #1d4ed8;
+      border: none;
+      padding: 0 18px;
+      border-radius: 10px;
+      color: white;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+
+    .btn.modal-confirm:hover {
+      background: #256ef0;
+    }
+
+    /* status badges */
+    .status-online {
+      color: #22c55e;
+      font-weight: 600;
+    }
+
+    .status-offline {
+      color: #ef4444;
+      font-weight: 600;
+    }
+
+    /* PLAYER CARDS */
+    #playerList {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .player-card {
+      background: rgba(2, 6, 23, 0.6);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255,255,255,0.04);
+      border-radius: 16px;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: 0.2s;
+    }
+
+    .player-card:hover {
+      background: rgba(15, 23, 42, 0.8);
+      border-color: rgba(59,130,246,0.3);
+    }
+
+    .player-name {
+      font-weight: 600;
+      color: white;
+      margin-right: 12px;
+    }
+
+    .player-id {
+      color: #9fb3d9;
+      font-size: 13px;
+    }
+
+    .player-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-kick, .btn-ban {
+      padding: 6px 14px;
+      border-radius: 30px;
+      font-size: 12px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: 0.2s;
+      border: 1px solid transparent;
+    }
+
+    .btn-kick {
+      background: #d97706;
+      color: white;
+    }
+    .btn-kick:hover { background: #b45309; }
+
+    .btn-ban {
+      background: #dc2626;
+      color: white;
+    }
+    .btn-ban:hover { background: #b91c1c; }
+
+    /* LOG CARDS */
+    #logList {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .log-card {
+      background: rgba(2, 6, 23, 0.6);
+      backdrop-filter: blur(4px);
+      border-radius: 14px;
+      padding: 14px 18px;
+      border-left: 5px solid #3b82f6;
+      font-size: 13px;
+      transition: 0.2s;
+      border: 1px solid rgba(255,255,255,0.03);
+    }
+
+    .log-card:hover {
+      background: #0f1a2f;
+      transform: translateX(0px);
+    }
+
+    .log-time {
+      font-weight: 600;
+      color: #9fb3c8;
+      margin-right: 10px;
+    }
+
+    .log-type {
+      background: rgba(255,255,255,0.05);
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .log-join { border-left-color: #22c55e; }
+    .log-leave { border-left-color: #f1c40f; }
+    .log-ban { border-left-color: #ef4444; }
+    .log-detect { border-left-color: #3b82f6; }
+
+    /* BAN CARDS */
+    #banList {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .ban-card {
+      background: rgba(2, 6, 23, 0.7);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,0.04);
+      border-radius: 20px;
+      padding: 18px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: 0.2s;
+    }
+
+    .ban-card:hover {
+      border-color: rgba(59,130,246,0.3);
+      background: #0b1429;
+    }
+
+    .ban-reason {
+      font-size: 16px;
+      font-weight: 600;
+      color: #f0f4ff;
+    }
+
+    .ban-id {
+      font-size: 12px;
+      color: #9fb3d9;
+      margin-top: 4px;
+    }
+
+    .unban-btn {
+      background: #1d4ed8;
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 30px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .unban-btn:hover {
+      background: #256ef0;
+      transform: scale(1.02);
+    }
+
+    /* DOWNLOAD-sida */
+    .primary-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: #1d4ed8;
+      color: white;
+      padding: 12px 28px;
+      border-radius: 40px;
+      text-decoration: none;
+      font-weight: 600;
+      margin: 16px 0 24px 0;
+      transition: 0.2s;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .primary-link:hover {
+      background: #256ef0;
+      transform: translateY(-0px);
+    }
+
+    .info-block {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.04);
+      padding: 20px;
+      border-radius: 18px;
+      line-height: 1.8;
+    }
+
+    .install-steps > div {
+      background: rgba(0,0,0,0.2);
+      border: 1px solid rgba(255,255,255,0.03);
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 10px;
+    }
+
+    .code-box {
+      background: #020617;
+      border: 1px solid #1e2b41;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #aac8ff;
+      margin-top: 8px;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      margin: 30px 0;
+    }
+
+    /* MODAL — samma tema */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+
+    .modal {
+      width: 440px;
+      background: rgba(2, 6, 23, 0.95);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 28px;
+      padding: 30px;
+      backdrop-filter: blur(20px);
+    }
+
+    .modal h3 {
+      font-size: 20px;
+      margin-bottom: 20px;
+      color: #d6e4ff;
+    }
+
+    .modal input {
+      width: 100%;
+      padding: 12px 16px;
+      background: #020617;
+      border: 1px solid #1e2b41;
+      border-radius: 12px;
+      color: white;
+      margin-bottom: 16px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .modal-cancel {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.15);
+      padding: 8px 18px;
+      border-radius: 30px;
+      color: white;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .modal-confirm {
+      background: #1d4ed8;
+      border: none;
+      padding: 8px 22px;
+      border-radius: 30px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* lite småfix */
+    .muted {
+      color: #9fb3d9;
+    }
+
+    .status-badge {
+      background: rgba(34,197,94,0.15);
+      color: #4ade80;
+      padding: 4px 12px;
+      border-radius: 30px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div id="actionModal" style="display:none;"></div>
+
+  <!-- SIDEBAR (ny navbar-look) -->
+  <div class="sidebar">
+    <div class="logo">
+      <i data-lucide="shield"></i>
+      <span>GhostGuard</span>
+    </div>
+
+    <div class="nav active" onclick="showView('dashboard', this)">
+      <i data-lucide="layout-dashboard"></i>
+      <span>Dashboard</span>
+    </div>
+    <div class="nav" onclick="showView('players', this)">
+      <i data-lucide="users"></i>
+      <span>Players</span>
+    </div>
+    <div class="nav" onclick="showView('logs', this)">
+      <i data-lucide="file-text"></i>
+      <span>Server Logs</span>
+    </div>
+    <div class="nav" onclick="showView('bans', this)">
+      <i data-lucide="shield-alert"></i>
+      <span>Ban List</span>
+    </div>
+    <div class="nav" onclick="showView('download', this)">
+      <i data-lucide="download"></i>
+      <span>Download</span>
+    </div>
+
+    <div class="support-nav">
+      <div class="nav" onclick="openSupport(event)">
+        <i data-lucide="life-buoy"></i>
+        <span>Support</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- HUVUDINNEHÅLL -->
+  <div class="content">
+    <!-- header med ikon + subtitle (valfritt) -->
+    <div class="page-header">
+      <h2><i data-lucide="layout-dashboard"></i> Dashboard</h2>
+      <span class="subtitle">GhostGuard Control Panel</span>
+    </div>
+
+    <!-- DASHBOARD VIEW -->
+    <div id="dashboardView">
+      <div class="grid">
+        <!-- LICENSE CARD -->
+        <div class="card">
+          <h3><i data-lucide="key-round"></i> License Information</h3>
+          <div class="license-section">
+            <div class="info-row" style="border:none; padding-top:0;"><i data-lucide="key"></i> License Key</div>
+            <div class="license-row">
+              <div id="licenseKeyDisplay" class="license-box">Loading...</div>
+              <button class="btn modal-confirm" onclick="copyLicense()"><i data-lucide="copy"></i></button>
+            </div>
+          </div>
+          <div class="info-row"><i data-lucide="activity"></i><strong>Status:</strong> <span id="licenseStatus">Loading...</span></div>
+          <div class="info-row"><i data-lucide="package"></i><strong>Plan:</strong> <span id="licensePlan">-</span></div>
+          <div class="info-row"><i data-lucide="calendar"></i><strong>Expires:</strong> <span id="licenseExpire">-</span></div>
+          <div class="info-row"><i data-lucide="clock"></i><strong>Days Remaining:</strong> <span id="licenseDays">-</span></div>
+        </div>
+
+        <!-- SERVER STATUS -->
+        <div class="card">
+          <h3><i data-lucide="server"></i> Server Status</h3>
+          <div class="info-row"><i data-lucide="power"></i><strong>Status:</strong> <span id="serverStatus">Loading...</span></div>
+          <div class="info-row"><i data-lucide="users"></i><strong>Online Players:</strong> <span id="playerCountDash">0</span></div>
+          <div class="info-row"><i data-lucide="link"></i><strong>License Bound:</strong> <span id="boundServer">Active</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PLAYERS VIEW -->
+    <div id="playersView" style="display:none;">
+      <div class="card">
+        <h3><i data-lucide="users"></i> Online Players</h3>
+        <div id="playerList"></div>
+      </div>
+    </div>
+
+    <!-- LOGS VIEW -->
+    <div id="logsView" style="display:none;">
+      <div class="card">
+        <h3><i data-lucide="scroll-text"></i> Live Server Logs</h3>
+        <div id="logList"></div>
+      </div>
+    </div>
+
+    <!-- BANS VIEW -->
+    <div id="bansView" style="display:none;">
+      <div class="card" style="margin-bottom:0;">
+        <h3><i data-lucide="shield-alert"></i> Banned Players</h3>
+      </div>
+      <div id="banList"></div>
+    </div>
+
+    <!-- DOWNLOAD VIEW -->
+    <div id="downloadView" style="display:none;">
+      <div class="card">
+        <h3><i data-lucide="download"></i> Download Center</h3>
+        <div class="info-block">
+          <i data-lucide="tag"></i> <strong>Current Version:</strong> v3.1.1<br>
+          <i data-lucide="check-circle"></i> <strong>Status:</strong> <span class="status-online">Stable</span>
+        </div>
+        <a href="/download/" target="_blank" class="primary-link">
+          <i data-lucide="download"></i> Download GhostGuard
+        </a>
+        <hr class="divider">
+        <h3 style="margin-top:0;"><i data-lucide="book-open"></i> Installation Guide</h3>
+        <div class="install-steps">
+          <div><strong><i data-lucide="arrow-down"></i> Step 1 — Download</strong><div class="muted">Download the latest GhostGuard package.   - Password: ghostguard202603</div></div>
+          <div><strong><i data-lucide="folder"></i> Step 2 — Extract Files</strong><div class="muted">Extract the downloaded .zip file.</div></div>
+          <div><strong><i data-lucide="server"></i> Step 3 — Move to Server</strong><div class="muted">Place folder inside:</div><div class="code-box">resources/[ghostguard]/</div></div>
+          <div><strong><i data-lucide="settings"></i> Step 4 — Edit server.cfg</strong><div class="muted">Add this line:</div><div class="code-box">ensure GhostGuard-Anticheat</div></div>
+          <div><strong><i data-lucide="key"></i> Step 5 — Insert License</strong><div class="muted">Edit <code>config.lua</code>:</div><div class="code-box">Config.LicenseKey = "GG-XXXX-XXXX"</div></div>
+          <div><strong><i data-lucide="refresh-ccw"></i> Step 6 — Restart Server</strong><div class="muted">Restart your FiveM server.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // All JavaScript är exakt samma som förut — inga funktioner ändrade
+    const API = "https://api.ghostguardac.se";
+    const licenseKey = localStorage.getItem("gg_license_key") || "";
+    const token = localStorage.getItem("gg_token") || "";
+
+    function escapeHTML(str) {
+      if (!str) return "";
+      return str.replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' })[m]);
+    }
+
+    function showView(view, el) {
+      document.querySelectorAll(".nav").forEach(n => n.classList.remove("active"));
+      if (el) el.classList.add("active");
+      ["dashboard","players","logs","bans","download"].forEach(v => {
+        const viewEl = document.getElementById(v + "View");
+        if (viewEl) viewEl.style.display = "none";
+      });
+      const active = document.getElementById(view + "View");
+      if (active) active.style.display = "block";
+      reRenderIcons();
+    }
+
+    async function fetchLicense() {
+      if (!token) return;
+      try {
+        const res = await fetch(API + "/customer/dashboard", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token })
+        });
+        const data = await res.json();
+        if (!data.success) return;
+        const lic = data.data;
+        document.getElementById("licenseStatus").innerText = lic.status;
+        document.getElementById("licenseKeyDisplay").innerText = lic.license_key || licenseKey;
+        if (!lic.expires_at) {
+          document.getElementById("licenseExpire").innerText = "Lifetime";
+          document.getElementById("licensePlan").innerText = "Lifetime";
+          document.getElementById("licenseDays").innerText = "∞";
+          return;
+        }
+        const expireDate = new Date(lic.expires_at);
+        const now = new Date();
+        const diff = Math.ceil((expireDate - now) / (1000 * 60 * 60 * 24));
+        document.getElementById("licenseExpire").innerText = expireDate.toLocaleDateString();
+        document.getElementById("licenseDays").innerText = diff > 0 ? diff + " days" : "Expired";
+      } catch (e) { console.error("License error:", e); }
+    }
+
+    async function fetchServer() {
+      if (!licenseKey) return;
+      try {
+        const res = await fetch(API + "/api/server/status/" + licenseKey);
+        const data = await res.json();
+        const statusEl = document.getElementById("serverStatus");
+        statusEl.innerText = data.online ? "Online" : "Offline";
+        statusEl.className = data.online ? "status-online" : "status-offline";
+        document.getElementById("playerCountDash").innerText = data.players || 0;
+      } catch (e) { console.error("Server error:", e); }
+    }
+
+    async function fetchPlayers() {
+      if (!licenseKey) return;
+      try {
+        const res = await fetch(API + "/api/server/players/" + licenseKey);
+        const data = await res.json();
+        const players = data.players || [];
+        document.getElementById("playerList").innerHTML = players.map(p => `
+          <div class="player-card">
+            <div><span class="player-name">${escapeHTML(p.name)}</span> <span class="player-id">ID: ${p.id}</span></div>
+            <div class="player-actions">
+              <button class="btn-kick" onclick="openModal('kick', ${p.id})">Kick</button>
+              <button class="btn-ban" onclick="openModal('ban', ${p.id})">Ban</button>
+            </div>
+          </div>`).join("");
+      } catch (e) { console.error("Players error:", e); }
+    }
+
+    async function fetchLogs() {
+      if (!licenseKey) return;
+      try {
+        const res = await fetch(API + "/api/server/logs/" + licenseKey);
+        const data = await res.json();
+        const logs = (data.data || []).slice(0, 50);
+        document.getElementById("logList").innerHTML = logs.map(l => {
+          let typeClass = "log-info", typeLabel = "INFO";
+          const msg = (l.message || "").toLowerCase();
+          if (msg.includes("joined")) { typeClass = "log-join"; typeLabel = "JOIN"; }
+          else if (msg.includes("left")) { typeClass = "log-leave"; typeLabel = "LEAVE"; }
+          else if (msg.includes("ban")) { typeClass = "log-ban"; typeLabel = "BAN"; }
+          else if (msg.includes("explosion") || msg.includes("speed") || msg.includes("noclip")) { typeClass = "log-detect"; typeLabel = "DETECTION"; }
+          return `<div class="log-card"><div><span class="log-time">${new Date(l.time).toLocaleTimeString()}</span> <span class="log-type ${typeClass}">${typeLabel}</span></div><div>${escapeHTML(l.message)}</div></div>`;
+        }).join("");
+      } catch (e) { console.error("Logs error:", e); }
+    }
+
+    async function fetchBans() {
+      if (!licenseKey) return;
+      try {
+        const res = await fetch(API + "/api/server/bans/" + licenseKey);
+        const data = await res.json();
+        const bans = data.bans || [];
+        document.getElementById("banList").innerHTML = bans.map(b => {
+          let evidenceButton = b.evidence_url ? `<button class="btn-kick" onclick="viewEvidence('${b.evidence_url}')">Evidence</button>` : "";
+          return `<div class="ban-card"><div><div class="ban-reason">${escapeHTML(b.reason)}</div><div class="ban-id">Ban ID: ${b.ban_id}</div></div><div style="display:flex; gap:10px;">${evidenceButton}<button class="unban-btn" onclick="unban('${b.ban_id}')">Unban</button></div></div>`;
+        }).join("");
+      } catch (e) { console.error("Bans error:", e); }
+    }
+
+    async function send(type, payload) {
+      try {
+        const res = await fetch(API + "/api/dashboard/action", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token, type, payload })
+        });
+        const data = await res.json();
+        return data.success;
+      } catch (e) { console.error("Send error:", e); return false; }
+    }
+
+    function openModal(type, playerId) {
+      const modal = document.getElementById("actionModal");
+      modal.innerHTML = `<div class="modal-overlay"><div class="modal"><h3>${type === "kick" ? "Kick Player" : "Ban Player"}</h3><input id="reasonInput" placeholder="Reason..." />${type === "ban" ? '<input id="durationInput" placeholder="Duration (30m,2h,7d,P)" />' : ""}<div class="modal-actions"><button class="modal-cancel" onclick="closeModal()">Cancel</button><button class="modal-confirm" id="confirmBtn">Confirm</button></div></div></div>`;
+      modal.style.display = "block";
+      document.getElementById("confirmBtn").onclick = () => confirmAction(type, playerId);
+      reRenderIcons();
+    }
+
+    function closeModal() { document.getElementById("actionModal").style.display = "none"; }
+
+    async function confirmAction(type, playerId) {
+      const btn = document.getElementById("confirmBtn");
+      btn.disabled = true; btn.innerText = "Processing...";
+      const reason = document.getElementById("reasonInput").value.trim();
+      if (!reason) { alert("Reason required"); btn.disabled = false; btn.innerText = "Confirm"; return; }
+      let payload = { player: playerId, reason };
+      if (type === "ban") {
+        const duration = document.getElementById("durationInput").value.trim();
+        if (!duration) { alert("Duration required"); btn.disabled = false; btn.innerText = "Confirm"; return; }
+        payload.duration = duration;
+      }
+      const ok = await send(type, payload);
+      if (ok) { closeModal(); fetchBans(); } 
+      else { alert("Action failed"); btn.disabled = false; btn.innerText = "Confirm"; }
+    }
+
+    function viewEvidence(url) {
+      const modal = document.getElementById("actionModal");
+      modal.innerHTML = `<div class="modal-overlay"><div class="modal" style="width:700px;"><h3>Ban Evidence</h3><img src="${url}" style="width:100%; border-radius:12px; margin-top:10px;"><div class="modal-actions"><button class="modal-cancel" onclick="closeModal()">Close</button></div></div></div>`;
+      modal.style.display = "block";
+    }
+
+    async function unban(banId) {
+      if (!banId || !confirm("Are you sure you want to unban this player?")) return;
+      try {
+        const res = await fetch(API + "/api/server/unban/" + banId, { method: "DELETE", headers: { "Authorization": "Bearer " + token } });
+        const data = await res.json();
+        if (data.success) { 
+          const card = document.querySelector(`[onclick="unban('${banId}')"]`)?.closest(".ban-card");
+          if (card) card.remove();
+          fetchBans();
+        } else { alert("Unban failed: " + (data.error || "unknown error")); }
+      } catch (e) { console.error("Unban error:", e); }
+    }
+
+    function openSupport(e) { e.stopPropagation(); window.open("https://discord.com/invite/e433wMpEeW", "_blank"); }
+    function copyLicense() { navigator.clipboard?.writeText(document.getElementById("licenseKeyDisplay").innerText); alert("License copied!"); }
+    function reRenderIcons() { if (window.lucide) lucide.createIcons(); }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      reRenderIcons();
+      fetchLicense(); fetchServer(); fetchPlayers(); fetchLogs(); fetchBans();
+      setInterval(fetchServer, 5000);
+      setInterval(fetchPlayers, 3000);
+      setInterval(fetchLogs, 3000);
+      setInterval(fetchBans, 5000);
+    });
+  </script>
+</body>
 </html>

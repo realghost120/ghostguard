@@ -2,7 +2,7 @@ Config = {}
 
 -- 🔐 LICENS
 Config.LicenseKey = "GG-A672-F851"
-Config.BackendURL = "https://ghostgaurd-becakd.onrender.com"
+Config.BackendURL = "https://api.ghostguardac.se"
 
 -- ⚙️ ANTICHEAT SETTINGS
 Config.MaxHealth = 200
