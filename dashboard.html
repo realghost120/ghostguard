@@ -657,9 +657,9 @@
 
   <script>
     // All JavaScript är exakt samma som förut — inga funktioner ändrade
-    const API = "https://ghostguardac.se";
+    const API = "https://panel.ghostguardac.se";
 
-    // Cross-domain handover: om vi kom från labbet.se med ?token=...&license_key=...
+    // Cross-domain handover: om vi kom från ghostguardac.se med ?token=...&license_key=...
     // spara i localStorage och rensa URL:en
     (function () {
       const params = new URLSearchParams(window.location.search);
@@ -677,7 +677,7 @@
 
     // Inte inloggad → tillbaka till landing
     if (!token) {
-      window.location.href = "https://labbet.se/";
+      window.location.href = "https://ghostguardac.se/";
     }
 
     function escapeHTML(str) {
