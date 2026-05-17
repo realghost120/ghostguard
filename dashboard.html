@@ -656,25 +656,32 @@
   </div>
 
   <script>
-    // All JavaScript är exakt samma som förut — inga funktioner ändrade
-    const API = "https://panel.ghostguardac.se";
+    const API = window.location.origin;
+    let licenseKey = "";
+    let customerInfo = null;
 
-    (function () {
-      const params = new URLSearchParams(window.location.search);
-      const urlToken = params.get("token");
-      const urlLicense = params.get("license_key");
-      if (urlToken) localStorage.setItem("gg_token", urlToken);
-      if (urlLicense) localStorage.setItem("gg_license_key", urlLicense);
-      if (urlToken || urlLicense) {
-        window.history.replaceState({}, "", window.location.pathname);
+    async function loadMe() {
+      try {
+        const res = await fetch(API + "/customer/me", { credentials: "include" });
+        if (!res.ok) { window.location.href = "/login"; return null; }
+        const data = await res.json();
+        if (!data.success) { window.location.href = "/login"; return null; }
+        customerInfo = data;
+        licenseKey = data.license?.license_key || "";
+        return data;
+      } catch {
+        window.location.href = "/login";
+        return null;
       }
-    })();
+    }
 
-    const licenseKey = localStorage.getItem("gg_license_key") || "";
-    const token = localStorage.getItem("gg_token") || "";
+    function authFetch(url, opts = {}) {
+      return fetch(url, { ...opts, credentials: "include" });
+    }
 
-    if (!token) {
-      window.location.href = "https://ghostguardac.se/";
+    async function doLogout() {
+      await fetch(API + "/auth/logout", { method: "POST", credentials: "include" });
+      window.location.href = "/login";
     }
 
     function escapeHTML(str) {
@@ -695,13 +702,8 @@
     }
 
     async function fetchLicense() {
-      if (!token) return;
       try {
-        const res = await fetch(API + "/customer/dashboard", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token })
-        });
+        const res = await authFetch(API + "/customer/dashboard");
         const data = await res.json();
         if (!data.success) return;
         const lic = data.data;
@@ -783,10 +785,10 @@
 
     async function send(type, payload) {
       try {
-        const res = await fetch(API + "/api/dashboard/action", {
+        const res = await authFetch(API + "/api/dashboard/action", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token, type, payload })
+          body: JSON.stringify({ type, payload })
         });
         const data = await res.json();
         return data.success;
@@ -828,7 +830,7 @@
     async function unban(banId) {
       if (!banId || !confirm("Are you sure you want to unban this player?")) return;
       try {
-        const res = await fetch(API + "/api/server/unban/" + banId, { method: "DELETE", headers: { "Authorization": "Bearer " + token } });
+        const res = await authFetch(API + "/api/server/unban/" + banId, { method: "DELETE" });
         const data = await res.json();
         if (data.success) { 
           const card = document.querySelector(`[onclick="unban('${banId}')"]`)?.closest(".ban-card");
@@ -842,8 +844,10 @@
     function copyLicense() { navigator.clipboard?.writeText(document.getElementById("licenseKeyDisplay").innerText); alert("License copied!"); }
     function reRenderIcons() { if (window.lucide) lucide.createIcons(); }
 
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("DOMContentLoaded", async () => {
       reRenderIcons();
+      const me = await loadMe();
+      if (!me) return;
       fetchLicense(); fetchServer(); fetchPlayers(); fetchLogs(); fetchBans();
       setInterval(fetchServer, 5000);
       setInterval(fetchPlayers, 3000);

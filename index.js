@@ -110,26 +110,43 @@ function parseCookies(req) {
   });
   return out;
 }
-function setSessionCookie(res, value) {
+function setCookie(res, name, value, maxAgeMs = SESSION_MAX_AGE_MS) {
   const attrs = [
-    `gg_admin=${value}`,
-    `Max-Age=${Math.floor(SESSION_MAX_AGE_MS / 1000)}`,
+    `${name}=${value}`,
+    `Max-Age=${Math.floor(maxAgeMs / 1000)}`,
     "Path=/",
     "HttpOnly",
     "Secure",
     "SameSite=Lax",
   ];
-  res.setHeader("Set-Cookie", attrs.join("; "));
+  const existing = res.getHeader("Set-Cookie") || [];
+  const arr = Array.isArray(existing) ? existing : [existing];
+  arr.push(attrs.join("; "));
+  res.setHeader("Set-Cookie", arr);
 }
-function clearSessionCookie(res) {
-  res.setHeader("Set-Cookie", "gg_admin=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax");
+function clearCookie(res, name) {
+  const existing = res.getHeader("Set-Cookie") || [];
+  const arr = Array.isArray(existing) ? existing : [existing];
+  arr.push(`${name}=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax`);
+  res.setHeader("Set-Cookie", arr);
 }
 
 function requireAdmin(req, res) {
   const cookies = parseCookies(req);
   const session = verifySession(cookies.gg_admin);
-  if (session && ADMIN_DISCORD_IDS.includes(session.discord_id)) {
+  if (session && session.kind === "admin" && ADMIN_DISCORD_IDS.includes(session.discord_id)) {
     req.admin = session;
+    return true;
+  }
+  res.status(401).json({ success: false, error: "UNAUTHORIZED" });
+  return false;
+}
+
+function requireCustomer(req, res) {
+  const cookies = parseCookies(req);
+  const session = verifySession(cookies.gg_customer);
+  if (session && session.kind === "customer" && session.customer_id) {
+    req.customer = session;
     return true;
   }
   res.status(401).json({ success: false, error: "UNAUTHORIZED" });
@@ -179,11 +196,13 @@ function extractDataUriParts(imageData) {
   return { mime: m[1], base64: m[2] };
 }
 
-async function resolvePanelIdentity(token) {
-  if (!token) return null;
-  const user = await qOne("SELECT * FROM customers WHERE id = $1", [token]);
-  if (user) return { kind: "customer", license_key: user.license_key, user };
-  return null;
+async function resolveCustomerFromCookie(req) {
+  const cookies = parseCookies(req);
+  const session = verifySession(cookies.gg_customer);
+  if (!session || session.kind !== "customer") return null;
+  const user = await qOne("SELECT * FROM customers WHERE id = $1", [session.customer_id]);
+  if (!user) return null;
+  return { license_key: user.license_key, user, session };
 }
 
 /* ================= DISCORD OAUTH2 (admin) ================= */
@@ -226,19 +245,47 @@ app.get("/auth/discord/callback", async (req, res) => {
     const user = await userRes.json();
     if (!user.id) return res.status(401).send("Could not fetch Discord user");
 
-    if (!ADMIN_DISCORD_IDS.includes(user.id)) {
-      return res.status(403).send(`Access denied. Discord ID ${user.id} är inte admin.`);
+    if (ADMIN_DISCORD_IDS.includes(user.id)) {
+      const payload = {
+        kind: "admin",
+        discord_id: user.id,
+        username: user.username,
+        avatar: user.avatar,
+        iat: Date.now(),
+        exp: Date.now() + SESSION_MAX_AGE_MS,
+      };
+      setCookie(res, "gg_admin", signSession(payload));
+      return res.redirect("/admin");
     }
 
-    const payload = {
+    const customer = await qOne("SELECT * FROM customers WHERE discord_id = $1", [user.id]);
+    if (customer && customer.active) {
+      await q(
+        "UPDATE customers SET last_login = now(), discord_name = $1, discord_avatar = $2 WHERE id = $3",
+        [user.username, user.avatar, customer.id]
+      );
+      const payload = {
+        kind: "customer",
+        customer_id: customer.id,
+        discord_id: user.id,
+        username: user.username,
+        avatar: user.avatar,
+        license_key: customer.license_key,
+        iat: Date.now(),
+        exp: Date.now() + SESSION_MAX_AGE_MS,
+      };
+      setCookie(res, "gg_customer", signSession(payload));
+      return res.redirect("/dashboard");
+    }
+
+    setCookie(res, "gg_pending", signSession({
       discord_id: user.id,
       username: user.username,
       avatar: user.avatar,
       iat: Date.now(),
-      exp: Date.now() + SESSION_MAX_AGE_MS,
-    };
-    setSessionCookie(res, signSession(payload));
-    res.redirect("/admin");
+      exp: Date.now() + 1000 * 60 * 30,
+    }));
+    return res.redirect("/noplan");
   } catch (e) {
     console.error("Discord callback error:", e);
     res.status(500).send("Server error");
@@ -246,34 +293,98 @@ app.get("/auth/discord/callback", async (req, res) => {
 });
 
 app.post("/auth/logout", (_req, res) => {
-  clearSessionCookie(res);
+  clearCookie(res, "gg_admin");
+  clearCookie(res, "gg_customer");
+  clearCookie(res, "gg_pending");
   res.json({ success: true });
 });
 
-app.get("/admin/me", (req, res) => {
+app.get("/auth/logout-redirect", (_req, res) => {
+  clearCookie(res, "gg_admin");
+  clearCookie(res, "gg_customer");
+  clearCookie(res, "gg_pending");
+  res.redirect("/login");
+});
+
+app.get("/auth/pending", (req, res) => {
   const cookies = parseCookies(req);
-  const session = verifySession(cookies.gg_admin);
-  if (!session || !ADMIN_DISCORD_IDS.includes(session.discord_id)) {
-    return res.status(401).json({ success: false });
-  }
+  const session = verifySession(cookies.gg_pending);
+  if (!session) return res.status(401).json({ success: false });
   res.json({
     success: true,
-    user: {
-      discord_id: session.discord_id,
-      username: session.username,
-      avatar: session.avatar,
-    },
+    user: { discord_id: session.discord_id, username: session.username, avatar: session.avatar },
+  });
+});
+
+app.get("/admin/me", (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  const s = req.admin;
+  res.json({
+    success: true,
+    user: { discord_id: s.discord_id, username: s.username, avatar: s.avatar },
+  });
+});
+
+app.get("/customer/me", async (req, res) => {
+  if (!requireCustomer(req, res)) return;
+  const s = req.customer;
+  const customer = await qOne("SELECT * FROM customers WHERE id = $1", [s.customer_id]);
+  if (!customer) {
+    clearCookie(res, "gg_customer");
+    return res.status(401).json({ success: false });
+  }
+  const lic = await qOne("SELECT * FROM licenses WHERE license_key = $1", [customer.license_key]);
+  res.json({
+    success: true,
+    user: { discord_id: s.discord_id, username: s.username, avatar: s.avatar },
+    license: lic ? { license_key: lic.license_key, status: lic.status, expires_at: lic.expires_at, plan: lic.plan } : null,
   });
 });
 
 /* ================= STATIC FILES ================= */
-app.get("/admin", (_req, res) => res.sendFile(path.join(__dirname, "admin.html")));
-app.get("/dashboard", (_req, res) => res.sendFile(path.join(__dirname, "dashboard.html")));
+app.get("/", (req, res) => {
+  const cookies = parseCookies(req);
+  const admin = verifySession(cookies.gg_admin);
+  if (admin && admin.kind === "admin" && ADMIN_DISCORD_IDS.includes(admin.discord_id)) return res.redirect("/admin");
+  const customer = verifySession(cookies.gg_customer);
+  if (customer && customer.kind === "customer") return res.redirect("/dashboard");
+  res.sendFile(path.join(__dirname, "login.html"));
+});
+
+app.get("/login", (req, res) => {
+  const cookies = parseCookies(req);
+  const admin = verifySession(cookies.gg_admin);
+  if (admin && admin.kind === "admin" && ADMIN_DISCORD_IDS.includes(admin.discord_id)) return res.redirect("/admin");
+  const customer = verifySession(cookies.gg_customer);
+  if (customer && customer.kind === "customer") return res.redirect("/dashboard");
+  res.sendFile(path.join(__dirname, "login.html"));
+});
+
+app.get("/noplan", (req, res) => {
+  const cookies = parseCookies(req);
+  if (!verifySession(cookies.gg_pending)) return res.redirect("/login");
+  res.sendFile(path.join(__dirname, "noplan.html"));
+});
+
+app.get("/admin", (req, res) => {
+  const cookies = parseCookies(req);
+  const session = verifySession(cookies.gg_admin);
+  if (!session || session.kind !== "admin" || !ADMIN_DISCORD_IDS.includes(session.discord_id)) {
+    return res.redirect("/login");
+  }
+  res.sendFile(path.join(__dirname, "admin.html"));
+});
+
+app.get("/dashboard", (req, res) => {
+  const cookies = parseCookies(req);
+  const session = verifySession(cookies.gg_customer);
+  if (!session || session.kind !== "customer") return res.redirect("/login");
+  res.sendFile(path.join(__dirname, "dashboard.html"));
+});
 
 app.use("/download", express.static(path.join(__dirname, "download")));
 
 /* ================= ROOT ================= */
-app.get("/", (_req, res) => res.send("GhostGuard Backend OK"));
 app.get("/health", (_req, res) => res.json({ ok: true, ts: Date.now() }));
 
 /* ================= LICENSE VERIFY ================= */
@@ -383,9 +494,7 @@ app.post("/api/server/ban/check", async (req, res) => {
 app.delete("/api/server/unban/:banId", async (req, res) => {
   try {
     const { banId } = req.params;
-    const bearer = req.headers.authorization || "";
-    const token = bearer.startsWith("Bearer ") ? bearer.slice(7) : null;
-    const identity = await resolvePanelIdentity(token);
+    const identity = await resolveCustomerFromCookie(req);
     if (!identity) return res.status(401).json({ success: false, error: "UNAUTHORIZED" });
 
     const ban = await qOne("SELECT * FROM bans WHERE ban_id = $1", [banId]);
@@ -394,7 +503,7 @@ app.delete("/api/server/unban/:banId", async (req, res) => {
       return res.status(403).json({ success: false, error: "FORBIDDEN" });
     }
 
-    const unbannedBy = identity.user.username;
+    const unbannedBy = identity.session.username || "Customer";
     await q(
       "UPDATE bans SET active = false, unbanned_at = now(), unbanned_by = $1 WHERE ban_id = $2",
       [unbannedBy, banId]
@@ -554,10 +663,10 @@ function pushAction(license_key, action) {
 
 app.post("/api/dashboard/action", async (req, res) => {
   try {
-    const { token, type, payload } = req.body || {};
-    if (!token || !type) return res.status(400).json({ success: false, error: "MISSING_FIELDS" });
+    const { type, payload } = req.body || {};
+    if (!type) return res.status(400).json({ success: false, error: "MISSING_FIELDS" });
 
-    const identity = await resolvePanelIdentity(token);
+    const identity = await resolveCustomerFromCookie(req);
     if (!identity) return res.status(401).json({ success: false, error: "UNAUTHORIZED" });
 
     const id = "ACT-" + Date.now() + "-" + Math.floor(Math.random() * 9999);
@@ -704,61 +813,25 @@ app.get("/api/server/detections/events/:license", async (req, res) => {
   }
 });
 
-/* ================= LOGIN ================= */
-app.post("/api/login", async (req, res) => {
-  try {
-    const { username, password } = req.body || {};
-    if (!username || !password) return res.json({ success: false });
-
-    const hash = sha256(password);
-    const user = await qOne(
-      "SELECT * FROM customers WHERE username = $1 AND password = $2 AND active = true",
-      [username, hash]
-    );
-    if (!user) return res.json({ success: false });
-    return res.json({ success: true, license_key: user.license_key, token: user.id });
-  } catch (err) {
-    console.error("login error:", err);
-    return res.status(500).json({ success: false });
-  }
-});
-
-/* ================= CUSTOMER ================= */
-app.post("/customer/dashboard", async (req, res) => {
-  try {
-    const { token } = req.body || {};
-    if (!token) return res.status(401).json({ success: false });
-
-    const user = await qOne("SELECT * FROM customers WHERE id = $1", [token]);
-    if (!user) return res.status(401).json({ success: false });
-
-    const lic = await qOne("SELECT * FROM licenses WHERE license_key = $1", [user.license_key]);
-    if (!lic) return res.status(404).json({ success: false });
-
-    return res.json({
-      success: true,
-      data: { license_key: lic.license_key, status: lic.status, expires_at: lic.expires_at },
-    });
-  } catch (err) {
-    console.error("customer/dashboard error:", err);
-    return res.status(500).json({ success: false });
-  }
+/* ================= CUSTOMER (cookie auth) ================= */
+app.get("/customer/dashboard", async (req, res) => {
+  if (!requireCustomer(req, res)) return;
+  const lic = await qOne("SELECT * FROM licenses WHERE license_key = $1", [req.customer.license_key]);
+  if (!lic) return res.status(404).json({ success: false });
+  res.json({
+    success: true,
+    data: { license_key: lic.license_key, status: lic.status, expires_at: lic.expires_at, plan: lic.plan },
+  });
 });
 
 app.post("/customer/toggle", async (req, res) => {
-  try {
-    const { token, status } = req.body || {};
-    if (!token || !status) return res.status(400).json({ success: false });
-
-    const user = await qOne("SELECT * FROM customers WHERE id = $1", [token]);
-    if (!user) return res.status(401).json({ success: false });
-
-    await q("UPDATE licenses SET status = $1 WHERE license_key = $2", [status, user.license_key]);
-    return res.json({ success: true });
-  } catch (err) {
-    console.error("customer/toggle error:", err);
-    return res.status(500).json({ success: false });
+  if (!requireCustomer(req, res)) return;
+  const { status } = req.body || {};
+  if (!status || !["ACTIVE", "SUSPENDED"].includes(status)) {
+    return res.status(400).json({ success: false, error: "INVALID_STATUS" });
   }
+  await q("UPDATE licenses SET status = $1 WHERE license_key = $2", [status, req.customer.license_key]);
+  res.json({ success: true });
 });
 
 /* ================= ADMIN ================= */
@@ -837,18 +910,20 @@ app.delete("/admin/delete-license/:license_key", async (req, res) => {
 app.post("/admin/create-customer", async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
-    const { username, password, license_key } = req.body || {};
-    if (!username || !password || !license_key) {
+    const { discord_id, license_key } = req.body || {};
+    if (!discord_id || !license_key) {
       return res.status(400).json({ success: false, error: "MISSING_FIELDS" });
     }
 
     const lic = await qOne("SELECT * FROM licenses WHERE license_key = $1", [license_key]);
     if (!lic) return res.status(404).json({ success: false, error: "LICENSE_NOT_FOUND" });
 
-    const password_hash = sha256(password);
+    const existing = await qOne("SELECT id FROM customers WHERE discord_id = $1", [discord_id]);
+    if (existing) return res.status(409).json({ success: false, error: "DISCORD_ID_ALREADY_LINKED" });
+
     const customer = await qOne(
-      "INSERT INTO customers (username, password, license_key) VALUES ($1, $2, $3) RETURNING *",
-      [username, password_hash, license_key]
+      "INSERT INTO customers (discord_id, license_key) VALUES ($1, $2) RETURNING *",
+      [discord_id, license_key]
     );
     return res.json({ success: true, customer });
   } catch (err) {
@@ -857,13 +932,19 @@ app.post("/admin/create-customer", async (req, res) => {
   }
 });
 
-app.post("/admin/update-customer-password", async (req, res) => {
+app.post("/admin/update-customer-discord", async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
-    const { id, new_password } = req.body || {};
-    if (!id || !new_password) return res.status(400).json({ success: false });
+    const { id, discord_id } = req.body || {};
+    if (!id || !discord_id) return res.status(400).json({ success: false });
 
-    await q("UPDATE customers SET password = $1 WHERE id = $2", [sha256(new_password), id]);
+    const existing = await qOne(
+      "SELECT id FROM customers WHERE discord_id = $1 AND id != $2",
+      [discord_id, id]
+    );
+    if (existing) return res.status(409).json({ success: false, error: "DISCORD_ID_ALREADY_LINKED" });
+
+    await q("UPDATE customers SET discord_id = $1 WHERE id = $2", [discord_id, id]);
     return res.json({ success: true });
   } catch (e) {
     console.error(e);

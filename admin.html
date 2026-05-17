@@ -783,12 +783,8 @@
                     </div>
                     <div class="row">
                         <div>
-                            <label>Username</label>
-                            <input id="cu" placeholder="kund1"/>
-                        </div>
-                        <div>
-                            <label>Password</label>
-                            <input id="cp" type="password" placeholder="lösenord"/>
+                            <label>Discord-ID</label>
+                            <input id="cu" placeholder="123456789012345678"/>
                         </div>
                         <div>
                             <label>License Key</label>
@@ -882,7 +878,7 @@
 
         async function checkAuth() {
             try {
-                const res = await fetch(API_BASE + "/admin/me", { credentials: "include" });
+                const res = await authFetch(API_BASE + "/admin/me", { credentials: "include" });
                 if (!res.ok) {
                     window.location.href = "/auth/discord";
                     return null;
@@ -910,7 +906,7 @@
         }
 
         document.getElementById("logoutBtn").onclick = async () => {
-            await fetch(API_BASE + "/auth/logout", { method: "POST", credentials: "include" });
+            await authFetch(API_BASE + "/auth/logout", { method: "POST", credentials: "include" });
             window.location.href = "/";
         };
 
@@ -946,7 +942,7 @@
         /* ================= LICENSES ================= */
         async function loadLicenses() {
             try {
-                const res = await fetch(API_BASE + "/admin/licenses", { headers: authHeaders() });
+                const res = await authFetch(API_BASE + "/admin/licenses", { headers: authHeaders() });
                 const json = await safeJson(res);
                 if (!res.ok || !json?.success) return;
 
@@ -978,7 +974,7 @@
 
         async function toggleLicense(key, status) {
             try {
-                await fetch(API_BASE + "/admin/toggle-license", {
+                await authFetch(API_BASE + "/admin/toggle-license", {
                     method: "POST",
                     headers: authHeaders(),
                     body: JSON.stringify({ license_key: key, status })
@@ -992,7 +988,7 @@
         async function deleteLicense(key) {
             if (!confirm("Ta bort licensen?")) return;
             try {
-                await fetch(API_BASE + "/admin/delete-license/" + key, {
+                await authFetch(API_BASE + "/admin/delete-license/" + key, {
                     method: "DELETE",
                     headers: authHeaders()
                 });
@@ -1005,23 +1001,21 @@
         /* ================= CUSTOMERS ================= */
         async function loadCustomers() {
             try {
-                const res = await fetch(API_BASE + "/admin/customers", { headers: authHeaders() });
+                const res = await authFetch(API_BASE + "/admin/customers", { headers: authHeaders() });
                 const json = await safeJson(res);
                 if (!res.ok || !json?.success) return;
 
                 const rows = (json.data || []).map(c => {
                     const isActive = c.active === true;
+                    const displayName = c.discord_name || c.username || c.discord_id || "-";
                     return `
                         <tr>
-                            <td><div style="font-weight:500;">${c.username}</div><div style="font-size:11px;color:#536b99;margin-top:2px;font-family:monospace;">${c.license_key}</div></td>
+                            <td><div style="font-weight:500;">${displayName}</div><div style="font-size:11px;color:#536b99;margin-top:2px;font-family:monospace;">Discord: ${c.discord_id || "-"}</div><div style="font-size:11px;color:#536b99;font-family:monospace;">${c.license_key}</div></td>
                             <td>${statusPill(isActive ? "ACTIVE" : "DISABLED")}</td>
                             <td>${formatDate(c.created_at)}</td>
                             <td class="actions">
-                                <button class="btn btn-orange" onclick="changePassword('${c.id}')">
-                                    Byt lösenord
-                                </button>
-                                <button class="btn btn-blue" onclick="generatePasswordForUser('${c.id}')">
-                                    Generera nytt
+                                <button class="btn btn-blue" onclick="editDiscordId('${c.id}', '${c.discord_id || ""}')">
+                                    Byt Discord-ID
                                 </button>
                                 <button class="btn ${isActive ? 'btn-danger' : 'btn-success'}" onclick="toggleCustomer('${c.id}', ${isActive})">
                                     ${isActive ? 'Pausa' : 'Aktivera'}
@@ -1041,7 +1035,7 @@
 
         async function toggleCustomer(id, current) {
             try {
-                await fetch(API_BASE + "/admin/toggle-customer", {
+                await authFetch(API_BASE + "/admin/toggle-customer", {
                     method: "POST",
                     headers: authHeaders(),
                     body: JSON.stringify({ id, active: !current })
@@ -1055,7 +1049,7 @@
         async function deleteCustomer(id) {
             if (!confirm("Ta bort konto?")) return;
             try {
-                await fetch(API_BASE + "/admin/delete-customer/" + id, {
+                await authFetch(API_BASE + "/admin/delete-customer/" + id, {
                     method: "DELETE",
                     headers: authHeaders()
                 });
@@ -1065,34 +1059,21 @@
             }
         }
 
-        async function changePassword(id) {
-            const pass = prompt("Nytt lösenord:");
-            if (!pass) return;
+        async function editDiscordId(id, current) {
+            const newId = prompt("Nytt Discord-ID:", current);
+            if (!newId || newId === current) return;
             try {
-                await fetch(API_BASE + "/admin/update-customer-password", {
+                const res = await authFetch(API_BASE + "/admin/update-customer-discord", {
                     method: "POST",
                     headers: authHeaders(),
-                    body: JSON.stringify({ id, new_password: pass })
+                    body: JSON.stringify({ id, discord_id: newId.trim() })
                 });
-                alert("Lösenord uppdaterat");
-            } catch (e) {
-                console.error(e);
-            }
-        }
-
-        function generateRandomPassword() {
-            return Math.random().toString(36).slice(-8);
-        }
-
-        async function generatePasswordForUser(id) {
-            const pass = generateRandomPassword();
-            try {
-                await fetch(API_BASE + "/admin/update-customer-password", {
-                    method: "POST",
-                    headers: authHeaders(),
-                    body: JSON.stringify({ id, new_password: pass })
-                });
-                alert("Nytt lösenord: " + pass);
+                const json = await safeJson(res);
+                if (json?.success) {
+                    loadCustomers();
+                } else {
+                    alert("Misslyckades: " + (json?.error || "okänt fel"));
+                }
             } catch (e) {
                 console.error(e);
             }
@@ -1100,22 +1081,25 @@
 
         /* ================= CREATE CUSTOMER ================= */
         document.getElementById("createCustomer").onclick = async () => {
-            const u = document.getElementById("cu").value.trim();
-            const p = document.getElementById("cp").value.trim();
-            const k = document.getElementById("ck").value.trim();
-            if (!u || !p || !k) {
-                alert("Fyll i alla fält");
+            const discord_id = document.getElementById("cu").value.trim();
+            const license_key = document.getElementById("ck").value.trim();
+            if (!discord_id || !license_key) {
+                alert("Fyll i Discord-ID och License Key");
                 return;
             }
             try {
-                await fetch(API_BASE + "/admin/create-customer", {
+                const res = await authFetch(API_BASE + "/admin/create-customer", {
                     method: "POST",
                     headers: authHeaders(),
-                    body: JSON.stringify({ username: u, password: p, license_key: k })
+                    body: JSON.stringify({ discord_id, license_key })
                 });
+                const json = await safeJson(res);
+                if (!json?.success) {
+                    alert("Kunde inte skapa kund: " + (json?.error || "okänt fel"));
+                    return;
+                }
                 loadCustomers();
                 document.getElementById("cu").value = "";
-                document.getElementById("cp").value = "";
                 document.getElementById("ck").value = "";
             } catch (e) {
                 console.error(e);
@@ -1126,7 +1110,7 @@
         document.getElementById("createLicense").onclick = async () => {
             const duration = document.getElementById("licenseDuration").value;
             try {
-                const res = await fetch(API_BASE + "/admin/create-license", {
+                const res = await authFetch(API_BASE + "/admin/create-license", {
                     method: "POST",
                     headers: authHeaders(),
                     body: JSON.stringify({ duration })
@@ -1181,7 +1165,7 @@
         /* ================= STATS ================= */
         async function loadStats() {
             try {
-                const res = await fetch(API_BASE + '/admin/stats', { headers: authHeaders() });
+                const res = await authFetch(API_BASE + '/admin/stats', { headers: authHeaders() });
                 const json = await safeJson(res);
                 if (!json || !json.success) return;
                 const s = json.stats;
@@ -1200,7 +1184,7 @@
 
         async function loadBans() {
             try {
-                const res = await fetch(API_BASE + '/admin/bans', { headers: authHeaders() });
+                const res = await authFetch(API_BASE + '/admin/bans', { headers: authHeaders() });
                 const json = await safeJson(res);
                 if (!res.ok || !json?.success) return;
                 allBansData = json.data || [];
@@ -1236,7 +1220,7 @@
         async function adminUnban(ban_id) {
             if (!confirm('Unbanna ' + ban_id + '?')) return;
             try {
-                await fetch(API_BASE + '/admin/unban', {
+                await authFetch(API_BASE + '/admin/unban', {
                     method: 'POST',
                     headers: authHeaders(),
                     body: JSON.stringify({ ban_id })
@@ -1253,7 +1237,7 @@
         /* ================= SERVERS ================= */
         async function loadServers() {
             try {
-                const res = await fetch(API_BASE + '/admin/servers', { headers: authHeaders() });
+                const res = await authFetch(API_BASE + '/admin/servers', { headers: authHeaders() });
                 const json = await safeJson(res);
                 if (!res.ok || !json?.success) return;
 

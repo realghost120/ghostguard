@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GhostGuard - Ingen plan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+    body {
+      background: radial-gradient(circle at top, #0c2448, #020617 70%);
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      z-index: -1;
+    }
+    .card {
+      background: rgba(2, 6, 23, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 24px;
+      padding: 48px 40px;
+      max-width: 520px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 60px -10px rgba(0,0,0,0.7);
+    }
+    .icon {
+      width: 80px;
+      height: 80px;
+      background: rgba(220, 38, 38, 0.15);
+      border: 2px solid rgba(220, 38, 38, 0.3);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 36px;
+    }
+    h1 { font-size: 26px; color: #e0edff; margin-bottom: 12px; }
+    p { color: #9fb3d9; line-height: 1.7; margin-bottom: 16px; font-size: 15px; }
+    .discord-info {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(88,101,242,0.3);
+      border-radius: 12px;
+      padding: 16px;
+      margin: 24px 0;
+      text-align: left;
+    }
+    .discord-info .label {
+      font-size: 12px;
+      color: #7f96c0;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+    .discord-info .value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
+      color: #60a5fa;
+      word-break: break-all;
+    }
+    .actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 28px;
+    }
+    .btn {
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+    }
+    .btn-primary { background: #3b82f6; color: white; }
+    .btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #cbd5f5;
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.05); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">!</div>
+    <h1>Du har ingen aktiv plan</h1>
+    <p>Hej <strong id="username">-</strong>, ditt Discord-konto är inte kopplat till någon licens just nu.</p>
+    <p>Skicka ditt Discord-ID nedan till oss så aktiverar vi din plan så snart vi sett din betalning.</p>
+
+    <div class="discord-info">
+      <div class="label">Ditt Discord-ID</div>
+      <div class="value" id="discordId">-</div>
+    </div>
+
+    <div class="actions">
+      <a href="https://ghostguardac.se/pricing/" class="btn btn-primary">Se priser</a>
+      <a href="/auth/logout-redirect" class="btn btn-ghost">Logga ut</a>
+    </div>
+  </div>
+  <script>
+    fetch("/auth/pending", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => {
+        if (d && d.success) {
+          document.getElementById("username").innerText = d.user.username || "-";
+          document.getElementById("discordId").innerText = d.user.discord_id || "-";
+        }
+      });
+  </script>
+</body>
+</html>

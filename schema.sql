@@ -29,18 +29,25 @@ CREATE INDEX IF NOT EXISTS idx_licenses_status ON licenses (status);
 -- ============================================================
 CREATE TABLE IF NOT EXISTS customers (
   id            uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-  username      text        NOT NULL UNIQUE,
-  password      text        NOT NULL,
+  username      text,
+  password      text,
   license_key   text        NOT NULL REFERENCES licenses(license_key) ON DELETE CASCADE,
   email         text,
   discord_id    text,
+  discord_name  text,
+  discord_avatar text,
   active        boolean     NOT NULL DEFAULT true,
   created_at    timestamptz NOT NULL DEFAULT now(),
   last_login    timestamptz
 );
 
+ALTER TABLE customers ALTER COLUMN username DROP NOT NULL;
+ALTER TABLE customers ALTER COLUMN password DROP NOT NULL;
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS discord_name text;
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS discord_avatar text;
+
 CREATE INDEX IF NOT EXISTS idx_customers_license_key ON customers (license_key);
-CREATE INDEX IF NOT EXISTS idx_customers_username ON customers (username);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_customers_discord_id ON customers (discord_id) WHERE discord_id IS NOT NULL;
 
 -- ============================================================
 -- bans (evidence lagras som bytea direkt i DB)
