@@ -1,7 +1,7 @@
 -- server/update.lua
 
 local CURRENT_VERSION = "3.1.0"
-local VERSION_URL = "https://api.ghostguardac.se/version"
+local VERSION_URL = "https://ghostguardac.se/version"
 
 
 CreateThread(function()

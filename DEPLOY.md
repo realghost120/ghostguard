@@ -34,9 +34,9 @@
 1. I projektet → "+ New" → Database → PostgreSQL
 2. Railway sätter automatiskt `DATABASE_URL` som env var
 
-### c) Kör schemat
-1. Öppna PostgreSQL i Railway → Query
-2. Klistra in hela `schema.sql` och kör
+### c) Schemat körs automatiskt
+Backend kör `schema.sql` vid uppstart (idempotent — `CREATE IF NOT EXISTS`).
+Vid varje deploy applicerar Railway eventuella schemaändringar automatiskt.
 
 ### d) Sätt environment variables
 I Railway → Variables:
@@ -61,20 +61,16 @@ Generera secret (PowerShell):
 
 ---
 
-## 2. Uppdatera URL:er
+## 2. URL:er
 
-Efter att Railway-domänen är klar, sök/ersätt `api.ghostguardac.se`:
-
-```bash
-grep -rl "api.ghostguardac.se" . | xargs sed -i 's|https://api.ghostguardac.se|https://DIN-DOMÄN|g'
-```
-
-Filer som påverkas:
+Alla filer pekar mot `https://ghostguardac.se`:
 - `admin.html` (API_BASE)
 - `dashboard.html` (API)
 - `GhostGuard-Anticheat/config.lua` (Config.BackendURL)
 - `GhostGuard-Anticheat/server/update.lua` (VERSION_URL)
 - `landing/index.html` på labbet.se (API-konstant)
+
+Om domänen ändras: sök/ersätt `https://ghostguardac.se` i ovanstående filer.
 
 ---
 

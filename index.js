@@ -2,6 +2,7 @@ import express from "express";
 import crypto from "crypto";
 import cors from "cors";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import pg from "pg";
 
@@ -35,6 +36,26 @@ async function q(sql, params = []) {
 async function qOne(sql, params = []) {
   const rows = await q(sql, params);
   return rows[0] || null;
+}
+
+// Kör schema.sql vid uppstart (idempotent — CREATE IF NOT EXISTS)
+async function runMigrations() {
+  if (!DATABASE_URL) {
+    console.warn("Skipping migrations: no DATABASE_URL");
+    return;
+  }
+  const schemaPath = path.join(__dirname, "schema.sql");
+  if (!fs.existsSync(schemaPath)) {
+    console.warn("Skipping migrations: schema.sql not found");
+    return;
+  }
+  const sql = fs.readFileSync(schemaPath, "utf8");
+  try {
+    await pool.query(sql);
+    console.log("✓ Migrations applied");
+  } catch (err) {
+    console.error("Migration error:", err.message);
+  }
 }
 
 /* ================= MIDDLEWARE ================= */
@@ -833,4 +854,7 @@ app.get("/admin/servers", async (req, res) => {
 });
 
 /* ================= START ================= */
-app.listen(PORT, () => console.log("GhostGuard backend running on", PORT));
+app.listen(PORT, async () => {
+  console.log("GhostGuard backend running on", PORT);
+  await runMigrations();
+});

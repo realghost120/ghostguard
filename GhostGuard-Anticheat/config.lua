@@ -2,7 +2,7 @@ Config = {}
 
 -- 🔐 LICENS
 Config.LicenseKey = "GG-A672-F851"
-Config.BackendURL = "https://api.ghostguardac.se"
+Config.BackendURL = "https://ghostguardac.se"
 
 -- ⚙️ ANTICHEAT SETTINGS
 Config.MaxHealth = 200
