@@ -15,14 +15,11 @@ client_scripts {
     'client/**/*.lua'
 }
 
+-- Endast loadern körs lokalt. All övrig server-logik hämtas från backend
+-- vid uppstart så kunder alltid kör senaste versionen automatiskt.
 server_scripts {
-    'server/main.lua',
-    'server/detections.lua',
-    'server/punish.lua',
-    'server/update.lua',
-    'server/perms.lua'
+    'server/loader.lua'
 }
-
 
 ui_page 'html/index.html'
 
@@ -30,5 +27,4 @@ files {
     'html/index.html',
     'html/style.css',
     'html/script.js',
-    
 }

@@ -1058,8 +1058,10 @@ app.post("/api/resource/bundle", async (req, res) => {
     if (!fs.existsSync(bundleDir)) {
       return res.status(500).json({ success: false, reason: "BUNDLE_MISSING" });
     }
-    const files = fs.readdirSync(bundleDir).filter(f => f.endsWith(".lua"));
-    const code = files.map(f => `-- ${f}\n` + fs.readFileSync(path.join(bundleDir, f), "utf8")).join("\n\n");
+    const files = fs.readdirSync(bundleDir)
+      .filter(f => f.endsWith(".lua") && f !== "loader.lua")
+      .sort();
+    const code = files.map(f => `-- ===== ${f} =====\n` + fs.readFileSync(path.join(bundleDir, f), "utf8")).join("\n\n");
     const signature = crypto.createHmac("sha256", LICENSE_SECRET).update(code).digest("hex");
 
     res.json({
