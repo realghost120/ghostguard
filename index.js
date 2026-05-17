@@ -5,6 +5,7 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import pg from "pg";
+import rateLimit from "express-rate-limit";
 
 const { Pool } = pg;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -79,6 +80,45 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
+
+app.set("trust proxy", 1);
+
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  res.setHeader("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+  next();
+});
+
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: "RATE_LIMITED" },
+});
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: "RATE_LIMITED" },
+});
+const licenseLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { valid: false, reason: "RATE_LIMITED" },
+});
+
+app.use("/auth", authLimiter);
+app.use("/admin", generalLimiter);
+app.use("/customer", generalLimiter);
+app.use("/api", generalLimiter);
+app.use("/api/license/verify", licenseLimiter);
 
 /* ================= HELPERS ================= */
 function sha256(str) {
@@ -255,7 +295,7 @@ app.get("/auth/discord/callback", async (req, res) => {
         exp: Date.now() + SESSION_MAX_AGE_MS,
       };
       setCookie(res, "gg_admin", signSession(payload));
-      return res.redirect("/admin");
+      return res.redirect("/panel");
     }
 
     const customer = await qOne("SELECT * FROM customers WHERE discord_id = $1", [user.id]);
@@ -345,7 +385,7 @@ app.get("/customer/me", async (req, res) => {
 app.get("/", (req, res) => {
   const cookies = parseCookies(req);
   const admin = verifySession(cookies.gg_admin);
-  if (admin && admin.kind === "admin" && ADMIN_DISCORD_IDS.includes(admin.discord_id)) return res.redirect("/admin");
+  if (admin && admin.kind === "admin" && ADMIN_DISCORD_IDS.includes(admin.discord_id)) return res.redirect("/panel");
   const customer = verifySession(cookies.gg_customer);
   if (customer && customer.kind === "customer") return res.redirect("/dashboard");
   res.sendFile(path.join(__dirname, "login.html"));
@@ -354,7 +394,7 @@ app.get("/", (req, res) => {
 app.get("/login", (req, res) => {
   const cookies = parseCookies(req);
   const admin = verifySession(cookies.gg_admin);
-  if (admin && admin.kind === "admin" && ADMIN_DISCORD_IDS.includes(admin.discord_id)) return res.redirect("/admin");
+  if (admin && admin.kind === "admin" && ADMIN_DISCORD_IDS.includes(admin.discord_id)) return res.redirect("/panel");
   const customer = verifySession(cookies.gg_customer);
   if (customer && customer.kind === "customer") return res.redirect("/dashboard");
   res.sendFile(path.join(__dirname, "login.html"));
@@ -366,13 +406,13 @@ app.get("/noplan", (req, res) => {
   res.sendFile(path.join(__dirname, "noplan.html"));
 });
 
-app.get("/admin", (req, res) => {
+app.get("/panel", (req, res) => {
   const cookies = parseCookies(req);
   const session = verifySession(cookies.gg_admin);
   if (!session || session.kind !== "admin" || !ADMIN_DISCORD_IDS.includes(session.discord_id)) {
     return res.redirect("/login");
   }
-  res.sendFile(path.join(__dirname, "admin.html"));
+  res.sendFile(path.join(__dirname, "panel.html"));
 });
 
 app.get("/dashboard", (req, res) => {
@@ -988,12 +1028,50 @@ app.get("/admin/customers", async (req, res) => {
   }
 });
 
+const RESOURCE_VERSION = "2.0.0";
+const RESOURCE_NOTES = "Stability improvements, security hardening & license enforcement";
+
 app.get("/version", (_req, res) => {
   res.json({
-    version: "3.1.0",
+    version: RESOURCE_VERSION,
     download: (PUBLIC_URL || "") + "/download/GhostGuard-Anticheat.zip",
-    notes: "Stability improvements & detection optimizations",
+    notes: RESOURCE_NOTES,
   });
+});
+
+app.post("/api/resource/bundle", async (req, res) => {
+  try {
+    const { license_key, hwid } = req.body || {};
+    if (!license_key) return res.status(400).json({ success: false, reason: "MISSING_KEY" });
+
+    const lic = await qOne("SELECT * FROM licenses WHERE license_key = $1", [license_key]);
+    if (!lic) return res.status(404).json({ success: false, reason: "NOT_FOUND" });
+    if (lic.status !== "ACTIVE") return res.status(403).json({ success: false, reason: lic.status });
+    if (lic.expires_at && new Date(lic.expires_at) < new Date()) {
+      return res.status(403).json({ success: false, reason: "EXPIRED" });
+    }
+    if (lic.hwid && hwid && lic.hwid !== hwid) {
+      return res.status(403).json({ success: false, reason: "HWID_MISMATCH" });
+    }
+
+    const bundleDir = path.join(__dirname, "GhostGuard-Anticheat", "server");
+    if (!fs.existsSync(bundleDir)) {
+      return res.status(500).json({ success: false, reason: "BUNDLE_MISSING" });
+    }
+    const files = fs.readdirSync(bundleDir).filter(f => f.endsWith(".lua"));
+    const code = files.map(f => `-- ${f}\n` + fs.readFileSync(path.join(bundleDir, f), "utf8")).join("\n\n");
+    const signature = crypto.createHmac("sha256", LICENSE_SECRET).update(code).digest("hex");
+
+    res.json({
+      success: true,
+      version: RESOURCE_VERSION,
+      code,
+      signature,
+    });
+  } catch (e) {
+    console.error("bundle error:", e);
+    res.status(500).json({ success: false, reason: "SERVER_ERROR" });
+  }
 });
 
 app.get("/admin/stats", async (req, res) => {

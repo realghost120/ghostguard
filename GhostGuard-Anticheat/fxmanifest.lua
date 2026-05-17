@@ -3,7 +3,7 @@ game 'gta5'
 
 author 'Ghost'
 description 'GhostGuard Anticheat'
-version '3.1.0'
+version '2.0.0'
 
 lua54 'yes'
 

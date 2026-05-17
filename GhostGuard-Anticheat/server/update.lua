@@ -1,6 +1,6 @@
 -- server/update.lua
 
-local CURRENT_VERSION = "3.1.0"
+local CURRENT_VERSION = "2.0.0"
 local VERSION_URL = "https://panel.ghostguardac.se/version"
 
 

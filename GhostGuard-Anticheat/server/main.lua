@@ -359,6 +359,14 @@ RegisterCommand("gac_reloadadmins", function()
 end, true)
 
 -- ========= LICENSE CHECK =========
+local function getServerHWID()
+    local hwid = GetConvar("sv_licenseKey", "")
+    if hwid == "" then
+        hwid = GetConvar("sv_hostname", "unknown") .. ":" .. GetConvar("sv_endpointPrivacy", "0")
+    end
+    return hwid
+end
+
 local function checkLicenseOnce(cb)
     local url = Config.BackendURL .. "/api/license/verify"
 
@@ -368,46 +376,70 @@ local function checkLicenseOnce(cb)
             return
         end
 
-        local data = json.decode(response or "{}")
+        local ok, data = pcall(json.decode, response)
+        if not ok or type(data) ~= "table" then
+            cb(false, "invalid_response")
+            return
+        end
 
-        if data and data.valid == true then
-            cb(true, "approved")
+        if data.valid == true and data.payload and data.signature then
+            cb(true, "approved", data)
         else
-            cb(false, data and data.reason or "denied")
+            cb(false, data.reason or "denied")
         end
     end,
     "POST",
     json.encode({
-        license_key = Config.LicenseKey
+        license_key = Config.LicenseKey,
+        hwid = getServerHWID(),
     }),
     { ["Content-Type"] = "application/json" })
+end
+
+local failedVerifications = 0
+local MAX_FAILED_BEFORE_SHUTDOWN = 3
+
+local function shutdownAnticheat(reason)
+    GhostGuardActive = false
+    print("^1═══════════════════════════════════════^0")
+    print("^1[GhostGuard] ANTICHEAT DISABLED^0")
+    print("^1Reason: " .. reason .. "^0")
+    print("^1Köp en ny licens på https://ghostguardac.se/pricing^0")
+    print("^1═══════════════════════════════════════^0")
+    pushLog("License", "SHUTDOWN", "Anticheat disabled: " .. reason)
+    Wait(2000)
+    StopResource(GetCurrentResourceName())
 end
 
 CreateThread(function()
     checkLicenseOnce(function(ok, state)
         if not ok then
-            print("^1[GhostGuard] License "..state.."^0")
-            pushLog("License", "DENIED", "License "..state..", stopping resource")
-            StopResource(GetCurrentResourceName())
+            shutdownAnticheat("License " .. state)
             return
         end
 
         GhostGuardActive = true
-        print("^2[GhostGuard] License approved. Anticheat active.^0")
+        print("^2[GhostGuard] License approved (HWID bound). Anticheat active.^0")
         pushLog("License", "OK", "License approved")
     end)
 
     while true do
         Wait(60 * 1000)
-        if GhostGuardActive then
-            checkLicenseOnce(function(ok, state)
-                if not ok then
-                    print("^1[GhostGuard] License revoked during runtime^0")
-                    pushLog("License", "REVOKED", "License revoked, stopping resource")
-                    StopResource(GetCurrentResourceName())
+        checkLicenseOnce(function(ok, state)
+            if not ok then
+                if state == "offline" or state == "invalid_response" then
+                    failedVerifications = failedVerifications + 1
+                    print("^3[GhostGuard] License verification failed ("..failedVerifications.."/"..MAX_FAILED_BEFORE_SHUTDOWN.."): "..state.."^0")
+                    if failedVerifications >= MAX_FAILED_BEFORE_SHUTDOWN then
+                        shutdownAnticheat("Could not verify license (network issue or DNS hijack)")
+                    end
+                    return
                 end
-            end)
-        end
+                shutdownAnticheat("License " .. state)
+            else
+                failedVerifications = 0
+            end
+        end)
     end
 end)
 
@@ -929,7 +961,7 @@ CreateThread(function()
                 "POST",
                 json.encode({
                     license_key = Config.LicenseKey,
-                    version = "3.0.0",
+                    version = "2.0.0",
                     players = players
                 }),
                 { ["Content-Type"] = "application/json" }

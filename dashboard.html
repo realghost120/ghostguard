@@ -1,859 +1,1566 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>GhostGuard – Anticheat Panel</title>
-  <!-- Inter font & lucide -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <style>
-    /* ===== RESET & ny tema — EXAKT STIL från landningssidan ===== */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Inter', sans-serif;
-    }
-
-    body {
-      background: radial-gradient(circle at top, #0c2448, #020617 70%);
-      color: white;
-      min-height: 100vh;
-      display: flex;
-      overflow-x: hidden;
-    }
-
-    /* rutnätsbakgrund (identisk med preview) */
-    body::before {
-      content: "";
-      position: fixed;
-      width: 100%;
-      height: 100%;
-      background-image:
-        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-      background-size: 60px 60px;
-      z-index: -1;
-      pointer-events: none;
-    }
-
-    /* ===== SIDEBAR — omarbetad med navbar-estetik ===== */
-    .sidebar {
-      width: 260px;
-      background: rgba(2, 6, 23, 0.85);
-      backdrop-filter: blur(12px);
-      border-right: 1px solid rgba(255, 255, 255, 0.05);
-      padding: 30px 16px;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 20px 40px -10px rgba(0,0,0,0.6);
-      z-index: 10;
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 22px;
-      font-weight: 700;
-      margin-bottom: 40px;
-      padding-left: 10px;
-      color: #bcd6ff;
-      letter-spacing: -0.3px;
-    }
-
-    .logo i {
-      color: #3b82f6;
-    }
-
-    .nav {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 12px 16px;
-      border-radius: 10px;
-      cursor: pointer;
-      margin-bottom: 6px;
-      color: #9fb3d9;
-      font-size: 15px;
-      font-weight: 500;
-      transition: all 0.2s ease;
-      border: 1px solid transparent;
-    }
-
-    .nav:hover {
-      background: rgba(255, 255, 255, 0.04);
-      border-color: rgba(59, 130, 246, 0.2);
-      color: white;
-    }
-
-    .nav.active {
-      background: rgba(29, 78, 216, 0.25);
-      border-color: rgba(59, 130, 246, 0.4);
-      color: white;
-      font-weight: 600;
-      backdrop-filter: blur(5px);
-    }
-
-    /* support-knapp i sidebar (längst ner) */
-    .support-nav {
-      margin-top: auto;
-      border-top: 1px solid rgba(255,255,255,0.05);
-      padding-top: 20px;
-    }
-
-    /* ===== HUVUDINNEHÅLL ===== */
-    .content {
-      flex: 1;
-      padding: 40px 48px;
-      overflow-y: auto;
-    }
-
-    /* rubrik med ikon */
-    .page-header {
-      margin-bottom: 32px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .page-header h2 {
-      font-size: 28px;
-      font-weight: 600;
-      color: #d6e4ff;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .subtitle {
-      color: #7f96c0;
-      font-size: 15px;
-      margin-left: 8px;
-    }
-
-    /* ===== GRID & KORT (genomskinliga med blur, samma stil som feature-card) ===== */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-      gap: 24px;
-    }
-
-    .card {
-      background: rgba(2, 6, 23, 0.7);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.04);
-      border-radius: 24px;
-      padding: 28px;
-      box-shadow: 0 12px 30px -10px rgba(0,0,0,0.6);
-      transition: transform 0.2s ease, border-color 0.2s;
-    }
-
-    .card:hover {
-      border-color: rgba(59, 130, 246, 0.25);
-      transform: translateY(-0px);
-    }
-
-    .card h3 {
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 24px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: #e0edff;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-      padding-bottom: 12px;
-    }
-
-    /* info-rader */
-    .info-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.02);
-      font-size: 14px;
-    }
-
-    .info-row strong {
-      width: 110px;
-      color: #bcd6ff;
-      font-weight: 500;
-    }
-
-    .info-row span {
-      color: #d6e4ff;
-    }
-
-    /* license-specifik */
-    .license-section {
-      background: rgba(0,0,0,0.25);
-      border-radius: 16px;
-      padding: 16px;
-      margin-bottom: 16px;
-      border: 1px solid rgba(255,255,255,0.03);
-    }
-
-    .license-row {
-      display: flex;
-      gap: 10px;
-      margin-top: 8px;
-    }
-
-    .license-box {
-      flex: 1;
-      background: #020617;
-      border: 1px solid rgba(255,255,255,0.1);
-      padding: 12px 14px;
-      border-radius: 10px;
-      font-family: monospace;
-      font-size: 14px;
-      color: #cbd5f5;
-      letter-spacing: 0.5px;
-    }
-
-    .btn.modal-confirm {
-      background: #1d4ed8;
-      border: none;
-      padding: 0 18px;
-      border-radius: 10px;
-      color: white;
-      font-weight: 600;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: background 0.2s;
-    }
-
-    .btn.modal-confirm:hover {
-      background: #256ef0;
-    }
-
-    /* status badges */
-    .status-online {
-      color: #22c55e;
-      font-weight: 600;
-    }
-
-    .status-offline {
-      color: #ef4444;
-      font-weight: 600;
-    }
-
-    /* PLAYER CARDS */
-    #playerList {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .player-card {
-      background: rgba(2, 6, 23, 0.6);
-      backdrop-filter: blur(4px);
-      border: 1px solid rgba(255,255,255,0.04);
-      border-radius: 16px;
-      padding: 16px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      transition: 0.2s;
-    }
-
-    .player-card:hover {
-      background: rgba(15, 23, 42, 0.8);
-      border-color: rgba(59,130,246,0.3);
-    }
-
-    .player-name {
-      font-weight: 600;
-      color: white;
-      margin-right: 12px;
-    }
-
-    .player-id {
-      color: #9fb3d9;
-      font-size: 13px;
-    }
-
-    .player-actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    .btn-kick, .btn-ban {
-      padding: 6px 14px;
-      border-radius: 30px;
-      font-size: 12px;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      transition: 0.2s;
-      border: 1px solid transparent;
-    }
-
-    .btn-kick {
-      background: #d97706;
-      color: white;
-    }
-    .btn-kick:hover { background: #b45309; }
-
-    .btn-ban {
-      background: #dc2626;
-      color: white;
-    }
-    .btn-ban:hover { background: #b91c1c; }
-
-    /* LOG CARDS */
-    #logList {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .log-card {
-      background: rgba(2, 6, 23, 0.6);
-      backdrop-filter: blur(4px);
-      border-radius: 14px;
-      padding: 14px 18px;
-      border-left: 5px solid #3b82f6;
-      font-size: 13px;
-      transition: 0.2s;
-      border: 1px solid rgba(255,255,255,0.03);
-    }
-
-    .log-card:hover {
-      background: #0f1a2f;
-      transform: translateX(0px);
-    }
-
-    .log-time {
-      font-weight: 600;
-      color: #9fb3c8;
-      margin-right: 10px;
-    }
-
-    .log-type {
-      background: rgba(255,255,255,0.05);
-      padding: 2px 10px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 600;
-    }
-
-    .log-join { border-left-color: #22c55e; }
-    .log-leave { border-left-color: #f1c40f; }
-    .log-ban { border-left-color: #ef4444; }
-    .log-detect { border-left-color: #3b82f6; }
-
-    /* BAN CARDS */
-    #banList {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-top: 12px;
-    }
-
-    .ban-card {
-      background: rgba(2, 6, 23, 0.7);
-      backdrop-filter: blur(6px);
-      border: 1px solid rgba(255,255,255,0.04);
-      border-radius: 20px;
-      padding: 18px 22px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      transition: 0.2s;
-    }
-
-    .ban-card:hover {
-      border-color: rgba(59,130,246,0.3);
-      background: #0b1429;
-    }
-
-    .ban-reason {
-      font-size: 16px;
-      font-weight: 600;
-      color: #f0f4ff;
-    }
-
-    .ban-id {
-      font-size: 12px;
-      color: #9fb3d9;
-      margin-top: 4px;
-    }
-
-    .unban-btn {
-      background: #1d4ed8;
-      border: none;
-      color: white;
-      padding: 8px 16px;
-      border-radius: 30px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-
-    .unban-btn:hover {
-      background: #256ef0;
-      transform: scale(1.02);
-    }
-
-    /* DOWNLOAD-sida */
-    .primary-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 12px;
-      background: #1d4ed8;
-      color: white;
-      padding: 12px 28px;
-      border-radius: 40px;
-      text-decoration: none;
-      font-weight: 600;
-      margin: 16px 0 24px 0;
-      transition: 0.2s;
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-
-    .primary-link:hover {
-      background: #256ef0;
-      transform: translateY(-0px);
-    }
-
-    .info-block {
-      background: rgba(0,0,0,0.3);
-      border: 1px solid rgba(255,255,255,0.04);
-      padding: 20px;
-      border-radius: 18px;
-      line-height: 1.8;
-    }
-
-    .install-steps > div {
-      background: rgba(0,0,0,0.2);
-      border: 1px solid rgba(255,255,255,0.03);
-      border-radius: 16px;
-      padding: 18px;
-      margin-bottom: 10px;
-    }
-
-    .code-box {
-      background: #020617;
-      border: 1px solid #1e2b41;
-      padding: 10px 14px;
-      border-radius: 12px;
-      font-family: monospace;
-      font-size: 12px;
-      color: #aac8ff;
-      margin-top: 8px;
-    }
-
-    .divider {
-      border: none;
-      border-top: 1px solid rgba(255,255,255,0.06);
-      margin: 30px 0;
-    }
-
-    /* MODAL — samma tema */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.8);
-      backdrop-filter: blur(6px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 999;
-    }
-
-    .modal {
-      width: 440px;
-      background: rgba(2, 6, 23, 0.95);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 28px;
-      padding: 30px;
-      backdrop-filter: blur(20px);
-    }
-
-    .modal h3 {
-      font-size: 20px;
-      margin-bottom: 20px;
-      color: #d6e4ff;
-    }
-
-    .modal input {
-      width: 100%;
-      padding: 12px 16px;
-      background: #020617;
-      border: 1px solid #1e2b41;
-      border-radius: 12px;
-      color: white;
-      margin-bottom: 16px;
-    }
-
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-    }
-
-    .modal-cancel {
-      background: transparent;
-      border: 1px solid rgba(255,255,255,0.15);
-      padding: 8px 18px;
-      border-radius: 30px;
-      color: white;
-      font-weight: 500;
-      cursor: pointer;
-    }
-
-    .modal-confirm {
-      background: #1d4ed8;
-      border: none;
-      padding: 8px 22px;
-      border-radius: 30px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    /* lite småfix */
-    .muted {
-      color: #9fb3d9;
-    }
-
-    .status-badge {
-      background: rgba(34,197,94,0.15);
-      color: #4ade80;
-      padding: 4px 12px;
-      border-radius: 30px;
-      font-size: 12px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GhostGuard · Anticheat Panel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #020617;
+            --surface: rgba(2, 6, 23, 0.7);
+            --surface-solid: #0a1226;
+            --surface-elev: rgba(12, 36, 72, 0.4);
+            --surface-hover: rgba(59, 130, 246, 0.08);
+            --border: rgba(255, 255, 255, 0.06);
+            --border-strong: rgba(255, 255, 255, 0.1);
+            --text: #d6e4ff;
+            --text-secondary: #9fb3d9;
+            --text-muted: #7f96c0;
+            --accent: #3b82f6;
+            --accent-hover: #4f93f7;
+            --accent-dark: #1d4ed8;
+            --accent-bg: rgba(59, 130, 246, 0.12);
+            --success: #4ade80;
+            --success-bg: rgba(74, 222, 128, 0.12);
+            --danger: #f87171;
+            --danger-bg: rgba(248, 113, 113, 0.12);
+            --warning: #fbbf24;
+            --warning-bg: rgba(251, 191, 36, 0.12);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --radius-lg: 18px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-size: 14px;
+            background: radial-gradient(circle at top, #0c2448, #020617 70%);
+            color: var(--text);
+            line-height: 1.5;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .app {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            min-height: 100vh;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            background: rgba(2, 6, 23, 0.85);
+            border-right: 1px solid var(--border);
+            padding: 22px 16px;
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.6);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px 22px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 18px;
+        }
+        .brand-dot {
+            width: 28px; height: 28px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+        }
+        .brand-dot i { color: white; font-size: 14px; }
+        .brand-name {
+            font-weight: 700;
+            font-size: 15px;
+            letter-spacing: -0.2px;
+        }
+        .brand-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .nav-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 4px 12px 8px;
+        }
+
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            width: 100%;
+            padding: 9px 12px;
+            background: transparent;
+            border: none;
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-size: 13.5px;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            margin-bottom: 2px;
+            transition: all 0.12s ease;
+            text-align: left;
+        }
+        .nav-btn i {
+            width: 16px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .nav-btn:hover {
+            background: var(--surface-hover);
+            color: var(--text);
+        }
+        .nav-btn:hover i { color: var(--text-secondary); }
+        .nav-btn.active {
+            background: var(--accent-bg);
+            color: var(--accent);
+            font-weight: 600;
+        }
+        .nav-btn.active i { color: var(--accent); }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .user-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: var(--radius-sm);
+        }
+        .user-avatar {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 12px;
+            flex-shrink: 0;
+            position: relative;
+        }
+        .user-avatar img { width: 100%; height: 100%; border-radius: 50%; }
+        .user-info { flex: 1; min-width: 0; }
+        .user-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .user-id {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .icon-btn {
+            width: 28px; height: 28px;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.12s;
+        }
+        .icon-btn:hover {
+            background: var(--surface-hover);
+            color: var(--text);
+        }
+
+        /* ===== MAIN ===== */
+        .main { min-width: 0; }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 32px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(2, 6, 23, 0.85);
+            backdrop-filter: blur(16px);
+        }
+        .topbar-title { display: flex; flex-direction: column; gap: 2px; }
+        .topbar-title h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+        .topbar-title .crumb { font-size: 12px; color: var(--text-muted); }
+        .server-status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: var(--surface-elev);
+            border: 1px solid var(--border-strong);
+            font-size: 12.5px;
+            font-weight: 500;
+        }
+        .server-status-pill::before {
+            content: "";
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+        }
+        .server-status-pill.online { color: var(--success); border-color: rgba(74, 222, 128, 0.25); background: var(--success-bg); }
+        .server-status-pill.online::before { background: var(--success); box-shadow: 0 0 8px var(--success); }
+        .server-status-pill.offline { color: var(--text-muted); }
+
+        .content {
+            padding: 28px 32px 60px;
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        /* ===== ANIMATIONS ===== */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(8px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        /* ===== VIEW ===== */
+        .view { display: none; }
+        .view.active {
+            display: block;
+            animation: fadeUp 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .view.active .card {
+            animation: fadeUp 0.45s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+        }
+        .view.active .card:nth-child(1) { animation-delay: 0.04s; }
+        .view.active .card:nth-child(2) { animation-delay: 0.1s; }
+        .view.active .grid-2 .card:nth-child(1) { animation-delay: 0.04s; }
+        .view.active .grid-2 .card:nth-child(2) { animation-delay: 0.12s; }
+
+        .nav-btn { position: relative; }
+        .nav-btn::before {
+            content: "";
+            position: absolute;
+            left: 0; top: 50%;
+            transform: translateY(-50%) scaleY(0.5);
+            width: 3px; height: 60%;
+            background: var(--accent);
+            border-radius: 0 3px 3px 0;
+            box-shadow: 0 0 12px var(--accent);
+            opacity: 0;
+            transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .nav-btn.active::before {
+            opacity: 1;
+            transform: translateY(-50%) scaleY(1);
+        }
+        .nav-btn:active { transform: scale(0.97); }
+
+        /* Button press animation */
+        .btn { transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1); }
+        .btn:active { transform: scale(0.96); }
+
+        /* List items stagger fade-in */
+        .list-row, .log-row {
+            animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+        }
+        .list-row:nth-child(1), .log-row:nth-child(1) { animation-delay: 0.02s; }
+        .list-row:nth-child(2), .log-row:nth-child(2) { animation-delay: 0.05s; }
+        .list-row:nth-child(3), .log-row:nth-child(3) { animation-delay: 0.08s; }
+        .list-row:nth-child(4), .log-row:nth-child(4) { animation-delay: 0.11s; }
+        .list-row:nth-child(5), .log-row:nth-child(5) { animation-delay: 0.14s; }
+        .list-row:nth-child(6), .log-row:nth-child(6) { animation-delay: 0.17s; }
+        .list-row:nth-child(7), .log-row:nth-child(7) { animation-delay: 0.20s; }
+        .list-row:nth-child(8), .log-row:nth-child(8) { animation-delay: 0.23s; }
+
+        /* Pulse animation on online status */
+        .server-status-pill.online::before {
+            animation: pulse 2s infinite;
+        }
+
+        /* User avatar entrance */
+        .user-card { animation: fadeIn 0.4s ease 0.1s backwards; }
+        .brand { animation: fadeUp 0.4s ease backwards; }
+
+        /* Sidebar slide-in on load */
+        .sidebar { animation: slideInLeft 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-12px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .topbar { animation: fadeIn 0.5s ease; }
+
+        /* License key shimmer on copy */
+        .license-key-box.copied {
+            background: linear-gradient(90deg,
+                rgba(0, 0, 0, 0.35) 0%,
+                rgba(59, 130, 246, 0.15) 50%,
+                rgba(0, 0, 0, 0.35) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1s ease;
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 8px 14px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-strong);
+            background: var(--surface);
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.12s;
+            white-space: nowrap;
+        }
+        .btn:hover { background: var(--surface-hover); border-color: rgba(148, 163, 184, 0.2); }
+        .btn i { font-size: 12px; }
+        .btn-primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 1px 0 rgba(255,255,255,0.1) inset, 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+        .btn-success {
+            background: var(--success-bg);
+            border-color: rgba(74, 222, 128, 0.25);
+            color: var(--success);
+        }
+        .btn-success:hover { background: rgba(74, 222, 128, 0.18); }
+        .btn-danger {
+            background: var(--danger-bg);
+            border-color: rgba(248, 113, 113, 0.25);
+            color: var(--danger);
+        }
+        .btn-danger:hover { background: rgba(248, 113, 113, 0.18); }
+        .btn-warning {
+            background: var(--warning-bg);
+            border-color: rgba(251, 191, 36, 0.25);
+            color: var(--warning);
+        }
+        .btn-warning:hover { background: rgba(251, 191, 36, 0.18); }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+        /* ===== CARDS ===== */
+        .card {
+            background: rgba(2, 6, 23, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 12px 30px -10px rgba(0,0,0,0.4);
+            transition: border-color 0.2s;
+        }
+        .card:hover { border-color: rgba(59, 130, 246, 0.2); }
+        .card-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 18px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+        .card-title h3 {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: -0.1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card-title h3 i { color: var(--accent); font-size: 13px; }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+
+        /* ===== INFO ROW ===== */
+        .info-list { display: flex; flex-direction: column; }
+        .info-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 11px 0;
+            font-size: 13.5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .info-row:last-child { border-bottom: none; }
+        .info-row .label {
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            font-weight: 500;
+        }
+        .info-row .label i { width: 14px; color: var(--text-muted); font-size: 12px; }
+        .info-row .value { color: var(--text); font-weight: 500; }
+        .info-row .value.mono { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+
+        /* ===== LICENSE KEY BOX ===== */
+        .license-key-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+        .license-key-box {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13.5px;
+            color: var(--accent);
+            letter-spacing: 0.5px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ===== PILL ===== */
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 9px;
+            font-size: 11.5px;
+            font-weight: 600;
+            border-radius: 999px;
+            border: 1px solid;
+        }
+        .pill::before {
+            content: "";
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            box-shadow: 0 0 8px currentColor;
+        }
+        .pill.good { color: var(--success); background: var(--success-bg); border-color: rgba(74, 222, 128, 0.2); }
+        .pill.bad { color: var(--text-muted); background: rgba(91, 102, 128, 0.1); border-color: rgba(91, 102, 128, 0.2); }
+        .pill.bad::before { box-shadow: none; }
+
+        /* ===== STATS GRID (small) ===== */
+        .mini-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 14px;
+            margin-top: 18px;
+        }
+        .mini-stat {
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 16px;
+        }
+        .mini-stat .label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 4px;
+        }
+        .mini-stat .value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text);
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.5px;
+        }
+
+        /* ===== PLAYERS / BANS / LOGS LIST ===== */
+        .list-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 18px;
+            background: rgba(0, 0, 0, 0.22);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 8px;
+            transition: all 0.15s;
+        }
+        .list-row:hover {
+            border-color: rgba(59, 130, 246, 0.25);
+            background: rgba(0, 0, 0, 0.32);
+        }
+        .list-row .info { flex: 1; min-width: 0; }
+        .list-row .title-line {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 14px;
+            margin-bottom: 3px;
+        }
+        .list-row .sub-line {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .list-row .actions { display: flex; gap: 6px; }
+
+        .log-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 11px 16px;
+            background: rgba(0, 0, 0, 0.22);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+        .log-time {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11.5px;
+            color: var(--text-muted);
+            min-width: 70px;
+        }
+        .log-type {
+            display: inline-flex;
+            padding: 2px 7px;
+            font-size: 10.5px;
+            font-weight: 700;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            min-width: 64px;
+            justify-content: center;
+        }
+        .log-info { background: var(--accent-bg); color: var(--accent); }
+        .log-join { background: var(--success-bg); color: var(--success); }
+        .log-leave { background: rgba(251, 191, 36, 0.1); color: var(--warning); }
+        .log-ban { background: var(--danger-bg); color: var(--danger); }
+        .log-detect { background: rgba(168, 85, 247, 0.12); color: #c084fc; }
+        .log-message {
+            flex: 1;
+            color: var(--text-secondary);
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* ===== FILTER BAR ===== */
+        .filter-bar {
+            display: flex;
+            gap: 4px;
+            padding: 4px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            width: fit-content;
+            margin-bottom: 14px;
+        }
+        .filter-bar .btn {
+            background: transparent;
+            border: none;
+            padding: 6px 12px;
+            color: var(--text-secondary);
+        }
+        .filter-bar .btn.active { background: var(--surface-hover); color: var(--text); border: none; }
+
+        /* ===== EMPTY ===== */
+        .empty {
+            padding: 50px 20px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+        .empty i { font-size: 30px; margin-bottom: 10px; opacity: 0.5; }
+
+        /* ===== DOWNLOAD BLOCK ===== */
+        .download-block {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(29, 78, 216, 0.04));
+            border: 1px solid rgba(59, 130, 246, 0.18);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            text-align: center;
+        }
+        .download-icon {
+            width: 64px; height: 64px;
+            background: var(--accent-bg);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            font-size: 28px;
+            color: var(--accent);
+        }
+        .download-version {
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        .download-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 8px;
+            letter-spacing: -0.3px;
+        }
+        .download-desc {
+            color: var(--text-secondary);
+            margin-bottom: 22px;
+            font-size: 13.5px;
+        }
+
+        /* ===== INPUT ===== */
+        label {
+            display: block;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px 14px;
+            font-family: inherit;
+            font-size: 14px;
+            color: var(--text);
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            outline: none;
+            transition: all 0.15s;
+        }
+        input:focus, textarea:focus {
+            border-color: var(--accent);
+            background: rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        input::placeholder { color: var(--text-muted); }
+
+        /* ===== CUSTOM DROPDOWN ===== */
+        .dropdown { position: relative; }
+        .dropdown-trigger {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 14px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.15s;
+        }
+        .dropdown-trigger:hover { border-color: rgba(59, 130, 246, 0.3); }
+        .dropdown.open .dropdown-trigger {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        .dropdown-trigger i.chevron { font-size: 11px; color: var(--text-muted); transition: transform 0.2s; }
+        .dropdown.open .dropdown-trigger i.chevron { transform: rotate(180deg); }
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            right: 0;
+            background: rgba(10, 18, 38, 0.98);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            padding: 6px;
+            box-shadow: 0 16px 40px -10px rgba(0,0,0,0.7);
+            z-index: 100;
+            opacity: 0;
+            transform: translateY(-4px);
+            pointer-events: none;
+            transition: all 0.15s ease;
+        }
+        .dropdown.open .dropdown-menu { opacity: 1; transform: translateY(0); pointer-events: auto; }
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 13.5px;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+        .dropdown-item:hover { background: var(--accent-bg); color: var(--text); }
+        .dropdown-item.selected { background: var(--accent-bg); color: var(--accent); font-weight: 500; }
+        .dropdown-item i { font-size: 11px; opacity: 0; }
+        .dropdown-item.selected i { opacity: 1; }
+
+        /* ===== CUSTOM MODAL ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.75);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            padding: 20px;
+        }
+        .modal-overlay.open { opacity: 1; pointer-events: auto; }
+        .modal {
+            background: rgba(10, 18, 38, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            max-width: 460px;
+            width: 100%;
+            box-shadow: 0 30px 80px -10px rgba(0,0,0,0.8);
+            transform: translateY(10px) scale(0.98);
+            transition: transform 0.2s ease;
+        }
+        .modal-overlay.open .modal { transform: translateY(0) scale(1); }
+        .modal-icon {
+            width: 48px; height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-bottom: 18px;
+        }
+        .modal-icon.confirm { background: var(--accent-bg); color: var(--accent); }
+        .modal-icon.danger { background: var(--danger-bg); color: var(--danger); }
+        .modal-icon.warning { background: var(--warning-bg); color: var(--warning); }
+        .modal-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 6px;
+            letter-spacing: -0.2px;
+        }
+        .modal-message {
+            color: var(--text-secondary);
+            font-size: 13.5px;
+            line-height: 1.55;
+            margin-bottom: 20px;
+        }
+        .modal-input { margin-bottom: 14px; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+        .modal-evidence-img {
+            width: 100%;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border-strong);
+        }
+
+        @media (max-width: 768px) {
+            .app { grid-template-columns: 1fr; }
+            .sidebar { position: relative; height: auto; }
+            .content { padding: 20px; }
+            .topbar { padding: 14px 20px; }
+            .grid-2 { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 <body>
-  <div id="actionModal" style="display:none;"></div>
-
-  <!-- SIDEBAR (ny navbar-look) -->
-  <div class="sidebar">
-    <div class="logo">
-      <i data-lucide="shield"></i>
-      <span>GhostGuard</span>
-    </div>
-
-    <div class="nav active" onclick="showView('dashboard', this)">
-      <i data-lucide="layout-dashboard"></i>
-      <span>Dashboard</span>
-    </div>
-    <div class="nav" onclick="showView('players', this)">
-      <i data-lucide="users"></i>
-      <span>Players</span>
-    </div>
-    <div class="nav" onclick="showView('logs', this)">
-      <i data-lucide="file-text"></i>
-      <span>Server Logs</span>
-    </div>
-    <div class="nav" onclick="showView('bans', this)">
-      <i data-lucide="shield-alert"></i>
-      <span>Ban List</span>
-    </div>
-    <div class="nav" onclick="showView('download', this)">
-      <i data-lucide="download"></i>
-      <span>Download</span>
-    </div>
-
-    <div class="support-nav">
-      <div class="nav" onclick="openSupport(event)">
-        <i data-lucide="life-buoy"></i>
-        <span>Support</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- HUVUDINNEHÅLL -->
-  <div class="content">
-    <!-- header med ikon + subtitle (valfritt) -->
-    <div class="page-header">
-      <h2><i data-lucide="layout-dashboard"></i> Dashboard</h2>
-      <span class="subtitle">GhostGuard Control Panel</span>
-    </div>
-
-    <!-- DASHBOARD VIEW -->
-    <div id="dashboardView">
-      <div class="grid">
-        <!-- LICENSE CARD -->
-        <div class="card">
-          <h3><i data-lucide="key-round"></i> License Information</h3>
-          <div class="license-section">
-            <div class="info-row" style="border:none; padding-top:0;"><i data-lucide="key"></i> License Key</div>
-            <div class="license-row">
-              <div id="licenseKeyDisplay" class="license-box">Loading...</div>
-              <button class="btn modal-confirm" onclick="copyLicense()"><i data-lucide="copy"></i></button>
+    <div class="app">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-dot"><i class="fas fa-shield-halved"></i></div>
+                <div>
+                    <div class="brand-name">GhostGuard</div>
+                    <div class="brand-sub">Anticheat</div>
+                </div>
             </div>
-          </div>
-          <div class="info-row"><i data-lucide="activity"></i><strong>Status:</strong> <span id="licenseStatus">Loading...</span></div>
-          <div class="info-row"><i data-lucide="package"></i><strong>Plan:</strong> <span id="licensePlan">-</span></div>
-          <div class="info-row"><i data-lucide="calendar"></i><strong>Expires:</strong> <span id="licenseExpire">-</span></div>
-          <div class="info-row"><i data-lucide="clock"></i><strong>Days Remaining:</strong> <span id="licenseDays">-</span></div>
+
+            <div class="nav-label">Översikt</div>
+            <button class="nav-btn active" data-view="dashboard">
+                <i class="fas fa-gauge-high"></i> Dashboard
+            </button>
+
+            <div class="nav-label" style="margin-top: 14px;">Server</div>
+            <button class="nav-btn" data-view="players">
+                <i class="fas fa-users"></i> Spelare
+            </button>
+            <button class="nav-btn" data-view="logs">
+                <i class="fas fa-file-lines"></i> Loggar
+            </button>
+            <button class="nav-btn" data-view="bans">
+                <i class="fas fa-ban"></i> Bans
+            </button>
+
+            <div class="nav-label" style="margin-top: 14px;">Resurs</div>
+            <button class="nav-btn" data-view="download">
+                <i class="fas fa-download"></i> Nedladdning
+            </button>
+            <button class="nav-btn" onclick="openSupport(event)">
+                <i class="fas fa-life-ring"></i> Support
+            </button>
+
+            <div class="sidebar-footer">
+                <div class="user-card">
+                    <div class="user-avatar">
+                        <img id="userAvatar" style="display:none;"/>
+                        <span id="userInitial">?</span>
+                    </div>
+                    <div class="user-info">
+                        <div class="user-name" id="userName">-</div>
+                        <div class="user-id" id="userId">-</div>
+                    </div>
+                    <button class="icon-btn" id="logoutBtn" title="Logga ut">
+                        <i class="fas fa-arrow-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main">
+            <header class="topbar">
+                <div class="topbar-title">
+                    <div class="crumb" id="topbarCrumb">Översikt</div>
+                    <h1 id="topbarTitle">Dashboard</h1>
+                </div>
+                <div class="server-status-pill offline" id="topbarStatus">
+                    <span id="topbarStatusText">Hämtar status</span>
+                </div>
+            </header>
+
+            <div class="content">
+
+                <!-- ===== DASHBOARD ===== -->
+                <div class="view active" id="dashboard">
+                    <div class="grid-2">
+                        <!-- LICENSE CARD -->
+                        <div class="card">
+                            <div class="card-title">
+                                <h3><i class="fas fa-key"></i> Licensinformation</h3>
+                            </div>
+                            <div class="license-key-row">
+                                <div class="license-key-box" id="licenseKeyDisplay">Laddar...</div>
+                                <button class="btn" onclick="copyLicense()" title="Kopiera">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                            <div class="info-list">
+                                <div class="info-row">
+                                    <span class="label"><i class="fas fa-circle-check"></i> Status</span>
+                                    <span class="value" id="licenseStatus">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label"><i class="fas fa-box"></i> Plan</span>
+                                    <span class="value" id="licensePlan">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label"><i class="fas fa-calendar"></i> Utgår</span>
+                                    <span class="value" id="licenseExpire">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label"><i class="fas fa-hourglass-half"></i> Dagar kvar</span>
+                                    <span class="value" id="licenseDays">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SERVER CARD -->
+                        <div class="card">
+                            <div class="card-title">
+                                <h3><i class="fas fa-server"></i> Server</h3>
+                            </div>
+                            <div class="info-list">
+                                <div class="info-row">
+                                    <span class="label"><i class="fas fa-bolt"></i> Status</span>
+                                    <span class="value" id="serverStatus">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label"><i class="fas fa-code-branch"></i> Version</span>
+                                    <span class="value mono" id="serverVersion">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label"><i class="fas fa-clock"></i> Uppetid</span>
+                                    <span class="value mono" id="serverUptime">-</span>
+                                </div>
+                            </div>
+
+                            <div class="mini-stats">
+                                <div class="mini-stat">
+                                    <div class="label">Spelare online</div>
+                                    <div class="value" id="playerCountDash">0</div>
+                                </div>
+                                <div class="mini-stat">
+                                    <div class="label">Detect. 24h</div>
+                                    <div class="value" id="detect24h">0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== PLAYERS ===== -->
+                <div class="view" id="players">
+                    <div class="card">
+                        <div class="card-title">
+                            <h3><i class="fas fa-users"></i> Spelare online</h3>
+                        </div>
+                        <div id="playerList"></div>
+                    </div>
+                </div>
+
+                <!-- ===== LOGS ===== -->
+                <div class="view" id="logs">
+                    <div class="card">
+                        <div class="card-title">
+                            <h3><i class="fas fa-file-lines"></i> Server-loggar (live)</h3>
+                        </div>
+                        <div id="logList"></div>
+                    </div>
+                </div>
+
+                <!-- ===== BANS ===== -->
+                <div class="view" id="bans">
+                    <div class="card">
+                        <div class="card-title">
+                            <h3><i class="fas fa-ban"></i> Bannade spelare</h3>
+                        </div>
+                        <div id="banList"></div>
+                    </div>
+                </div>
+
+                <!-- ===== DOWNLOAD ===== -->
+                <div class="view" id="download">
+                    <div class="download-block">
+                        <div class="download-icon"><i class="fas fa-download"></i></div>
+                        <div class="download-version">v2.0.0 — Stable</div>
+                        <div class="download-title">GhostGuard Anticheat</div>
+                        <div class="download-desc">Installera resursen på din FiveM-server och starta den via server.cfg</div>
+                        <a href="/download/GhostGuard-Anticheat.zip" class="btn btn-primary">
+                            <i class="fas fa-download"></i> Ladda ner
+                        </a>
+                    </div>
+
+                    <div class="card" style="margin-top:20px;">
+                        <div class="card-title">
+                            <h3><i class="fas fa-list-check"></i> Installation</h3>
+                        </div>
+                        <div class="info-list">
+                            <div class="info-row">
+                                <span class="label">1. Extrahera</span>
+                                <span class="value">Lägg mappen i <code style="font-family:'JetBrains Mono',monospace;color:var(--accent);">resources/</code></span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">2. Aktivera</span>
+                                <span class="value mono">ensure GhostGuard-Anticheat</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">3. Konfigurera</span>
+                                <span class="value">Sätt <code style="font-family:'JetBrains Mono',monospace;color:var(--accent);">LicenseKey</code> i config.lua</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">4. Starta om</span>
+                                <span class="value">Restart server</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- CUSTOM MODAL -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-icon confirm" id="modalIcon"><i class="fas fa-circle-question"></i></div>
+            <div class="modal-title" id="modalTitle">Bekräfta</div>
+            <div class="modal-message" id="modalMessage">Är du säker?</div>
+            <img id="modalEvidence" class="modal-evidence-img" style="display:none;"/>
+            <div class="modal-input" id="modalInputWrap" style="display:none;">
+                <label id="modalInputLabel">Värde</label>
+                <input id="modalInput" type="text"/>
+            </div>
+            <div class="modal-input" id="modalInputWrap2" style="display:none;">
+                <label id="modalInputLabel2">Värde 2</label>
+                <input id="modalInput2" type="text"/>
+            </div>
+            <div class="modal-actions">
+                <button class="btn" id="modalCancel">Avbryt</button>
+                <button class="btn btn-primary" id="modalOk">Bekräfta</button>
+            </div>
         </div>
-
-        <!-- SERVER STATUS -->
-        <div class="card">
-          <h3><i data-lucide="server"></i> Server Status</h3>
-          <div class="info-row"><i data-lucide="power"></i><strong>Status:</strong> <span id="serverStatus">Loading...</span></div>
-          <div class="info-row"><i data-lucide="users"></i><strong>Online Players:</strong> <span id="playerCountDash">0</span></div>
-          <div class="info-row"><i data-lucide="link"></i><strong>License Bound:</strong> <span id="boundServer">Active</span></div>
-        </div>
-      </div>
     </div>
 
-    <!-- PLAYERS VIEW -->
-    <div id="playersView" style="display:none;">
-      <div class="card">
-        <h3><i data-lucide="users"></i> Online Players</h3>
-        <div id="playerList"></div>
-      </div>
-    </div>
+    <script>
+        /* ===== CUSTOM MODAL ===== */
+        const modalState = { resolver: null };
+        const modalEls = {
+            overlay: document.getElementById("modalOverlay"),
+            icon: document.getElementById("modalIcon"),
+            title: document.getElementById("modalTitle"),
+            message: document.getElementById("modalMessage"),
+            evidence: document.getElementById("modalEvidence"),
+            inputWrap: document.getElementById("modalInputWrap"),
+            inputLabel: document.getElementById("modalInputLabel"),
+            input: document.getElementById("modalInput"),
+            inputWrap2: document.getElementById("modalInputWrap2"),
+            inputLabel2: document.getElementById("modalInputLabel2"),
+            input2: document.getElementById("modalInput2"),
+            cancel: document.getElementById("modalCancel"),
+            ok: document.getElementById("modalOk"),
+        };
 
-    <!-- LOGS VIEW -->
-    <div id="logsView" style="display:none;">
-      <div class="card">
-        <h3><i data-lucide="scroll-text"></i> Live Server Logs</h3>
-        <div id="logList"></div>
-      </div>
-    </div>
-
-    <!-- BANS VIEW -->
-    <div id="bansView" style="display:none;">
-      <div class="card" style="margin-bottom:0;">
-        <h3><i data-lucide="shield-alert"></i> Banned Players</h3>
-      </div>
-      <div id="banList"></div>
-    </div>
-
-    <!-- DOWNLOAD VIEW -->
-    <div id="downloadView" style="display:none;">
-      <div class="card">
-        <h3><i data-lucide="download"></i> Download Center</h3>
-        <div class="info-block">
-          <i data-lucide="tag"></i> <strong>Current Version:</strong> v3.1.1<br>
-          <i data-lucide="check-circle"></i> <strong>Status:</strong> <span class="status-online">Stable</span>
-        </div>
-        <a href="/download/" target="_blank" class="primary-link">
-          <i data-lucide="download"></i> Download GhostGuard
-        </a>
-        <hr class="divider">
-        <h3 style="margin-top:0;"><i data-lucide="book-open"></i> Installation Guide</h3>
-        <div class="install-steps">
-          <div><strong><i data-lucide="arrow-down"></i> Step 1 — Download</strong><div class="muted">Download the latest GhostGuard package.   - Password: ghostguard202603</div></div>
-          <div><strong><i data-lucide="folder"></i> Step 2 — Extract Files</strong><div class="muted">Extract the downloaded .zip file.</div></div>
-          <div><strong><i data-lucide="server"></i> Step 3 — Move to Server</strong><div class="muted">Place folder inside:</div><div class="code-box">resources/[ghostguard]/</div></div>
-          <div><strong><i data-lucide="settings"></i> Step 4 — Edit server.cfg</strong><div class="muted">Add this line:</div><div class="code-box">ensure GhostGuard-Anticheat</div></div>
-          <div><strong><i data-lucide="key"></i> Step 5 — Insert License</strong><div class="muted">Edit <code>config.lua</code>:</div><div class="code-box">Config.LicenseKey = "GG-XXXX-XXXX"</div></div>
-          <div><strong><i data-lucide="refresh-ccw"></i> Step 6 — Restart Server</strong><div class="muted">Restart your FiveM server.</div></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    const API = window.location.origin;
-    let licenseKey = "";
-    let customerInfo = null;
-
-    async function loadMe() {
-      try {
-        const res = await fetch(API + "/customer/me", { credentials: "include" });
-        if (!res.ok) { window.location.href = "/login"; return null; }
-        const data = await res.json();
-        if (!data.success) { window.location.href = "/login"; return null; }
-        customerInfo = data;
-        licenseKey = data.license?.license_key || "";
-        return data;
-      } catch {
-        window.location.href = "/login";
-        return null;
-      }
-    }
-
-    function authFetch(url, opts = {}) {
-      return fetch(url, { ...opts, credentials: "include" });
-    }
-
-    async function doLogout() {
-      await fetch(API + "/auth/logout", { method: "POST", credentials: "include" });
-      window.location.href = "/login";
-    }
-
-    function escapeHTML(str) {
-      if (!str) return "";
-      return str.replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' })[m]);
-    }
-
-    function showView(view, el) {
-      document.querySelectorAll(".nav").forEach(n => n.classList.remove("active"));
-      if (el) el.classList.add("active");
-      ["dashboard","players","logs","bans","download"].forEach(v => {
-        const viewEl = document.getElementById(v + "View");
-        if (viewEl) viewEl.style.display = "none";
-      });
-      const active = document.getElementById(view + "View");
-      if (active) active.style.display = "block";
-      reRenderIcons();
-    }
-
-    async function fetchLicense() {
-      try {
-        const res = await authFetch(API + "/customer/dashboard");
-        const data = await res.json();
-        if (!data.success) return;
-        const lic = data.data;
-        document.getElementById("licenseStatus").innerText = lic.status;
-        document.getElementById("licenseKeyDisplay").innerText = lic.license_key || licenseKey;
-        if (!lic.expires_at) {
-          document.getElementById("licenseExpire").innerText = "Lifetime";
-          document.getElementById("licensePlan").innerText = "Lifetime";
-          document.getElementById("licenseDays").innerText = "∞";
-          return;
+        function closeModal(result) {
+            modalEls.overlay.classList.remove("open");
+            if (modalState.resolver) {
+                modalState.resolver(result);
+                modalState.resolver = null;
+            }
         }
-        const expireDate = new Date(lic.expires_at);
-        const now = new Date();
-        const diff = Math.ceil((expireDate - now) / (1000 * 60 * 60 * 24));
-        document.getElementById("licenseExpire").innerText = expireDate.toLocaleDateString();
-        document.getElementById("licenseDays").innerText = diff > 0 ? diff + " days" : "Expired";
-      } catch (e) { console.error("License error:", e); }
-    }
-
-    async function fetchServer() {
-      if (!licenseKey) return;
-      try {
-        const res = await fetch(API + "/api/server/status/" + licenseKey);
-        const data = await res.json();
-        const statusEl = document.getElementById("serverStatus");
-        statusEl.innerText = data.online ? "Online" : "Offline";
-        statusEl.className = data.online ? "status-online" : "status-offline";
-        document.getElementById("playerCountDash").innerText = data.players || 0;
-      } catch (e) { console.error("Server error:", e); }
-    }
-
-    async function fetchPlayers() {
-      if (!licenseKey) return;
-      try {
-        const res = await fetch(API + "/api/server/players/" + licenseKey);
-        const data = await res.json();
-        const players = data.players || [];
-        document.getElementById("playerList").innerHTML = players.map(p => `
-          <div class="player-card">
-            <div><span class="player-name">${escapeHTML(p.name)}</span> <span class="player-id">ID: ${p.id}</span></div>
-            <div class="player-actions">
-              <button class="btn-kick" onclick="openModal('kick', ${p.id})">Kick</button>
-              <button class="btn-ban" onclick="openModal('ban', ${p.id})">Ban</button>
-            </div>
-          </div>`).join("");
-      } catch (e) { console.error("Players error:", e); }
-    }
-
-    async function fetchLogs() {
-      if (!licenseKey) return;
-      try {
-        const res = await fetch(API + "/api/server/logs/" + licenseKey);
-        const data = await res.json();
-        const logs = (data.data || []).slice(0, 50);
-        document.getElementById("logList").innerHTML = logs.map(l => {
-          let typeClass = "log-info", typeLabel = "INFO";
-          const msg = (l.message || "").toLowerCase();
-          if (msg.includes("joined")) { typeClass = "log-join"; typeLabel = "JOIN"; }
-          else if (msg.includes("left")) { typeClass = "log-leave"; typeLabel = "LEAVE"; }
-          else if (msg.includes("ban")) { typeClass = "log-ban"; typeLabel = "BAN"; }
-          else if (msg.includes("explosion") || msg.includes("speed") || msg.includes("noclip")) { typeClass = "log-detect"; typeLabel = "DETECTION"; }
-          return `<div class="log-card"><div><span class="log-time">${new Date(l.time).toLocaleTimeString()}</span> <span class="log-type ${typeClass}">${typeLabel}</span></div><div>${escapeHTML(l.message)}</div></div>`;
-        }).join("");
-      } catch (e) { console.error("Logs error:", e); }
-    }
-
-    async function fetchBans() {
-      if (!licenseKey) return;
-      try {
-        const res = await fetch(API + "/api/server/bans/" + licenseKey);
-        const data = await res.json();
-        const bans = data.bans || [];
-        document.getElementById("banList").innerHTML = bans.map(b => {
-          let evidenceButton = b.evidence_url ? `<button class="btn-kick" onclick="viewEvidence('${b.evidence_url}')">Evidence</button>` : "";
-          return `<div class="ban-card"><div><div class="ban-reason">${escapeHTML(b.reason)}</div><div class="ban-id">Ban ID: ${b.ban_id}</div></div><div style="display:flex; gap:10px;">${evidenceButton}<button class="unban-btn" onclick="unban('${b.ban_id}')">Unban</button></div></div>`;
-        }).join("");
-      } catch (e) { console.error("Bans error:", e); }
-    }
-
-    async function send(type, payload) {
-      try {
-        const res = await authFetch(API + "/api/dashboard/action", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type, payload })
+        modalEls.cancel.onclick = () => closeModal(null);
+        modalEls.overlay.addEventListener("click", e => {
+            if (e.target === modalEls.overlay) closeModal(null);
         });
-        const data = await res.json();
-        return data.success;
-      } catch (e) { console.error("Send error:", e); return false; }
-    }
+        document.addEventListener("keydown", e => {
+            if (!modalEls.overlay.classList.contains("open")) return;
+            if (e.key === "Escape") closeModal(null);
+            if (e.key === "Enter" && document.activeElement?.tagName !== "TEXTAREA") modalEls.ok.click();
+        });
 
-    function openModal(type, playerId) {
-      const modal = document.getElementById("actionModal");
-      modal.innerHTML = `<div class="modal-overlay"><div class="modal"><h3>${type === "kick" ? "Kick Player" : "Ban Player"}</h3><input id="reasonInput" placeholder="Reason..." />${type === "ban" ? '<input id="durationInput" placeholder="Duration (30m,2h,7d,P)" />' : ""}<div class="modal-actions"><button class="modal-cancel" onclick="closeModal()">Cancel</button><button class="modal-confirm" id="confirmBtn">Confirm</button></div></div></div>`;
-      modal.style.display = "block";
-      document.getElementById("confirmBtn").onclick = () => confirmAction(type, playerId);
-      reRenderIcons();
-    }
+        function showModal(opts) {
+            return new Promise(resolve => {
+                modalState.resolver = resolve;
+                modalEls.title.innerText = opts.title || "Bekräfta";
+                modalEls.message.innerText = opts.message || "";
+                modalEls.message.style.display = opts.message ? "block" : "none";
+                modalEls.icon.className = "modal-icon " + (opts.iconType || "confirm");
+                modalEls.icon.innerHTML = `<i class="${opts.iconClass || "fas fa-circle-question"}"></i>`;
+                modalEls.ok.innerText = opts.okText || "Bekräfta";
+                modalEls.cancel.innerText = opts.cancelText || "Avbryt";
+                modalEls.cancel.style.display = opts.hideCancel ? "none" : "inline-flex";
+                modalEls.ok.className = "btn " + (opts.danger ? "btn-danger" : "btn-primary");
 
-    function closeModal() { document.getElementById("actionModal").style.display = "none"; }
+                modalEls.evidence.style.display = "none";
+                modalEls.inputWrap.style.display = "none";
+                modalEls.inputWrap2.style.display = "none";
 
-    async function confirmAction(type, playerId) {
-      const btn = document.getElementById("confirmBtn");
-      btn.disabled = true; btn.innerText = "Processing...";
-      const reason = document.getElementById("reasonInput").value.trim();
-      if (!reason) { alert("Reason required"); btn.disabled = false; btn.innerText = "Confirm"; return; }
-      let payload = { player: playerId, reason };
-      if (type === "ban") {
-        const duration = document.getElementById("durationInput").value.trim();
-        if (!duration) { alert("Duration required"); btn.disabled = false; btn.innerText = "Confirm"; return; }
-        payload.duration = duration;
-      }
-      const ok = await send(type, payload);
-      if (ok) { closeModal(); fetchBans(); } 
-      else { alert("Action failed"); btn.disabled = false; btn.innerText = "Confirm"; }
-    }
+                if (opts.imageUrl) {
+                    modalEls.evidence.src = opts.imageUrl;
+                    modalEls.evidence.style.display = "block";
+                }
+                if (opts.input1) {
+                    modalEls.inputWrap.style.display = "block";
+                    modalEls.inputLabel.innerText = opts.input1.label || "Värde";
+                    modalEls.input.placeholder = opts.input1.placeholder || "";
+                    modalEls.input.value = opts.input1.defaultValue || "";
+                    setTimeout(() => modalEls.input.focus(), 50);
+                }
+                if (opts.input2) {
+                    modalEls.inputWrap2.style.display = "block";
+                    modalEls.inputLabel2.innerText = opts.input2.label || "Värde";
+                    modalEls.input2.placeholder = opts.input2.placeholder || "";
+                    modalEls.input2.value = opts.input2.defaultValue || "";
+                }
+                modalEls.ok.onclick = () => {
+                    if (opts.input1 || opts.input2) {
+                        closeModal({
+                            input1: modalEls.input.value,
+                            input2: modalEls.input2.value,
+                        });
+                    } else {
+                        closeModal(true);
+                    }
+                };
+                modalEls.overlay.classList.add("open");
+            });
+        }
 
-    function viewEvidence(url) {
-      const modal = document.getElementById("actionModal");
-      modal.innerHTML = `<div class="modal-overlay"><div class="modal" style="width:700px;"><h3>Ban Evidence</h3><img src="${url}" style="width:100%; border-radius:12px; margin-top:10px;"><div class="modal-actions"><button class="modal-cancel" onclick="closeModal()">Close</button></div></div></div>`;
-      modal.style.display = "block";
-    }
+        function customConfirm(message, opts = {}) {
+            return showModal({
+                title: opts.title || "Bekräfta åtgärd",
+                message,
+                iconClass: opts.danger ? "fas fa-triangle-exclamation" : "fas fa-circle-question",
+                iconType: opts.danger ? "danger" : "confirm",
+                okText: opts.okText || "Bekräfta",
+                danger: opts.danger,
+            }).then(r => r === true);
+        }
 
-    async function unban(banId) {
-      if (!banId || !confirm("Are you sure you want to unban this player?")) return;
-      try {
-        const res = await authFetch(API + "/api/server/unban/" + banId, { method: "DELETE" });
-        const data = await res.json();
-        if (data.success) { 
-          const card = document.querySelector(`[onclick="unban('${banId}')"]`)?.closest(".ban-card");
-          if (card) card.remove();
-          fetchBans();
-        } else { alert("Unban failed: " + (data.error || "unknown error")); }
-      } catch (e) { console.error("Unban error:", e); }
-    }
+        function customAlert(message, opts = {}) {
+            return showModal({
+                title: opts.title || "Information",
+                message,
+                iconClass: opts.iconClass || "fas fa-circle-info",
+                iconType: opts.iconType || "confirm",
+                okText: "OK",
+                hideCancel: true,
+            });
+        }
 
-    function openSupport(e) { e.stopPropagation(); window.open("https://discord.com/invite/e433wMpEeW", "_blank"); }
-    function copyLicense() { navigator.clipboard?.writeText(document.getElementById("licenseKeyDisplay").innerText); alert("License copied!"); }
-    function reRenderIcons() { if (window.lucide) lucide.createIcons(); }
+        /* ===== API ===== */
+        const DEV_MODE = window.location.protocol === "file:" || window.location.hostname === "localhost";
+        const API = window.location.origin;
+        let licenseKey = DEV_MODE ? "GG-A1B2-C3D4" : "";
+        let customerInfo = null;
 
-    document.addEventListener("DOMContentLoaded", async () => {
-      reRenderIcons();
-      const me = await loadMe();
-      if (!me) return;
-      fetchLicense(); fetchServer(); fetchPlayers(); fetchLogs(); fetchBans();
-      setInterval(fetchServer, 5000);
-      setInterval(fetchPlayers, 3000);
-      setInterval(fetchLogs, 3000);
-      setInterval(fetchBans, 5000);
-    });
-  </script>
+        const DEV_DATA = {
+            me: {
+                success: true,
+                user: { discord_id: "1289995419606192270", username: "Dev Customer", avatar: null },
+                license: { license_key: "GG-A1B2-C3D4", status: "ACTIVE", plan: "monthly", expires_at: "2026-06-17T00:00:00Z" },
+            },
+            status: { online: true, players: 24, uptime: 13340, version: "2.0.0", last_seen: Date.now() },
+            players: [
+                { id: 1, name: "MikaelGustaf", ping: 38 },
+                { id: 7, name: "PrideKnights", ping: 45 },
+                { id: 12, name: "xXTheRealXx", ping: 78 },
+                { id: 14, name: "Anders_K", ping: 22 },
+                { id: 21, name: "Vincent99", ping: 91 },
+            ],
+            logs: [
+                { id: 1, time: new Date(Date.now() - 5000).toISOString(), message: "MikaelGustaf joined the server" },
+                { id: 2, time: new Date(Date.now() - 15000).toISOString(), message: "Detected speed hack on player 12 (xXTheRealXx)" },
+                { id: 3, time: new Date(Date.now() - 32000).toISOString(), message: "PrideKnights joined the server" },
+                { id: 4, time: new Date(Date.now() - 60000).toISOString(), message: "Player 18 banned for noclip" },
+                { id: 5, time: new Date(Date.now() - 95000).toISOString(), message: "Anders_K left the server" },
+                { id: 6, time: new Date(Date.now() - 120000).toISOString(), message: "Server resource started" },
+            ],
+            bans: [
+                { ban_id: "GG-1748800001", license_key: "GG-A1B2-C3D4", player_name: "Cheater123", reason: "Speed hack detected by automod", active: true, created_at: "2026-05-17T08:00:00Z" },
+                { ban_id: "GG-1748800002", license_key: "GG-A1B2-C3D4", player_name: "AimGod99", reason: "Aimbot detected", active: true, evidence_url: "https://via.placeholder.com/600x400/1d4ed8/ffffff?text=Evidence+Screenshot", created_at: "2026-05-16T14:30:00Z" },
+                { ban_id: "GG-1748800003", license_key: "GG-A1B2-C3D4", player_name: "GodMode", reason: "God mode", active: false, created_at: "2026-05-15T10:00:00Z" },
+            ],
+            detect24h: 8,
+        };
+
+        function devMock(url, opts) {
+            const method = (opts.method || "GET").toUpperCase();
+            const path = url.replace(API, "");
+            if (path === "/customer/me") return mockResponse(DEV_DATA.me);
+            if (path === "/customer/dashboard") return mockResponse({ success: true, data: DEV_DATA.me.license });
+            if (path.startsWith("/api/server/status/")) return mockResponse(DEV_DATA.status);
+            if (path.startsWith("/api/server/players/")) return mockResponse({ success: true, players: DEV_DATA.players });
+            if (path.startsWith("/api/server/logs/")) return mockResponse({ success: true, data: DEV_DATA.logs });
+            if (path.startsWith("/api/server/bans/")) return mockResponse({ success: true, bans: DEV_DATA.bans });
+            if (path === "/api/dashboard/action" && method === "POST") {
+                const body = JSON.parse(opts.body || "{}");
+                if (body.type === "ban") {
+                    DEV_DATA.bans.unshift({
+                        ban_id: "GG-" + Date.now(),
+                        license_key: "GG-A1B2-C3D4",
+                        player_name: "Player " + body.payload.player,
+                        reason: body.payload.reason,
+                        active: true,
+                        created_at: new Date().toISOString(),
+                    });
+                }
+                return mockResponse({ success: true });
+            }
+            if (path.startsWith("/api/server/unban/") && method === "DELETE") {
+                const id = path.split("/").pop();
+                const ban = DEV_DATA.bans.find(b => b.ban_id === id);
+                if (ban) ban.active = false;
+                return mockResponse({ success: true });
+            }
+            if (path === "/auth/logout") return mockResponse({ success: true });
+            console.warn("[DEV] Unmocked:", method, path);
+            return mockResponse({ success: false });
+        }
+        function mockResponse(data) {
+            return Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve(data),
+                text: () => Promise.resolve(JSON.stringify(data)),
+            });
+        }
+
+        async function loadMe() {
+            try {
+                const res = DEV_MODE
+                    ? await devMock(API + "/customer/me", {})
+                    : await fetch(API + "/customer/me", { credentials: "include" });
+                if (!res.ok) { if (!DEV_MODE) window.location.href = "/login"; return null; }
+                const data = await res.json();
+                if (!data.success) { if (!DEV_MODE) window.location.href = "/login"; return null; }
+                customerInfo = data;
+                licenseKey = data.license?.license_key || "";
+                return data;
+            } catch {
+                if (!DEV_MODE) window.location.href = "/login";
+                return null;
+            }
+        }
+
+        function authFetch(url, opts = {}) {
+            if (DEV_MODE) return devMock(url, opts);
+            return fetch(url, { ...opts, credentials: "include" });
+        }
+
+        async function doLogout() {
+            if (DEV_MODE) { customAlert("Logout (dev mode)", { title: "Dev mode", iconClass: "fas fa-code" }); return; }
+            await fetch(API + "/auth/logout", { method: "POST", credentials: "include" });
+            window.location.href = "/login";
+        }
+        document.getElementById("logoutBtn").onclick = doLogout;
+
+        function renderUser(data) {
+            document.getElementById("userName").innerText = data.user.username || "-";
+            document.getElementById("userId").innerText = data.user.discord_id || "-";
+            document.getElementById("userInitial").innerText = (data.user.username || "?").charAt(0).toUpperCase();
+            if (data.user.avatar) {
+                const img = document.getElementById("userAvatar");
+                img.src = `https://cdn.discordapp.com/avatars/${data.user.discord_id}/${data.user.avatar}.png?size=64`;
+                img.style.display = "block";
+                document.getElementById("userInitial").style.display = "none";
+            }
+        }
+
+        function escapeHTML(str) {
+            if (!str) return "";
+            return String(str).replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' })[m]);
+        }
+
+        /* ===== LICENSE ===== */
+        async function fetchLicense() {
+            try {
+                const res = await authFetch(API + "/customer/dashboard");
+                const data = await res.json();
+                if (!data.success) return;
+                const lic = data.data;
+                document.getElementById("licenseKeyDisplay").innerText = lic.license_key || licenseKey;
+                document.getElementById("licenseStatus").innerHTML = lic.status === "ACTIVE"
+                    ? `<span class="pill good">${lic.status}</span>`
+                    : `<span class="pill bad">${lic.status}</span>`;
+                document.getElementById("licensePlan").innerText = (lic.plan || "-").charAt(0).toUpperCase() + (lic.plan || "-").slice(1);
+                if (!lic.expires_at) {
+                    document.getElementById("licenseExpire").innerText = "Livstid";
+                    document.getElementById("licenseDays").innerText = "∞";
+                    return;
+                }
+                const expireDate = new Date(lic.expires_at);
+                const now = new Date();
+                const diff = Math.ceil((expireDate - now) / (1000 * 60 * 60 * 24));
+                document.getElementById("licenseExpire").innerText = expireDate.toLocaleDateString("sv-SE", { year:"numeric", month:"short", day:"numeric" });
+                document.getElementById("licenseDays").innerText = diff > 0 ? diff + " dagar" : "Utgången";
+            } catch (e) { console.error("License error:", e); }
+        }
+
+        /* ===== SERVER ===== */
+        function formatUptime(s) {
+            if (!s) return "-";
+            const h = Math.floor(s / 3600);
+            const m = Math.floor((s % 3600) / 60);
+            return h + "h " + m + "m";
+        }
+
+        async function fetchServer() {
+            if (!licenseKey) return;
+            try {
+                const res = await authFetch(API + "/api/server/status/" + licenseKey);
+                const data = await res.json();
+                const isOnline = data.online === true;
+                const statusEl = document.getElementById("serverStatus");
+                statusEl.innerHTML = isOnline
+                    ? `<span class="pill good">ONLINE</span>`
+                    : `<span class="pill bad">OFFLINE</span>`;
+                document.getElementById("playerCountDash").innerText = data.players || 0;
+                document.getElementById("serverVersion").innerText = data.version || "-";
+                document.getElementById("serverUptime").innerText = formatUptime(data.uptime);
+
+                const topbar = document.getElementById("topbarStatus");
+                topbar.className = "server-status-pill " + (isOnline ? "online" : "offline");
+                document.getElementById("topbarStatusText").innerText = isOnline
+                    ? `Server online · ${data.players || 0} spelare`
+                    : "Server offline";
+                document.getElementById("detect24h").innerText = DEV_MODE ? DEV_DATA.detect24h : (data.detections_24h ?? 0);
+            } catch (e) { console.error("Server error:", e); }
+        }
+
+        /* ===== PLAYERS ===== */
+        async function fetchPlayers() {
+            if (!licenseKey) return;
+            try {
+                const res = await authFetch(API + "/api/server/players/" + licenseKey);
+                const data = await res.json();
+                const players = data.players || [];
+                const list = document.getElementById("playerList");
+                if (players.length === 0) {
+                    list.innerHTML = '<div class="empty"><i class="fas fa-user-slash"></i><br>Inga spelare online just nu</div>';
+                    return;
+                }
+                list.innerHTML = players.map(p => `
+                    <div class="list-row">
+                        <div class="info">
+                            <div class="title-line">${escapeHTML(p.name)}</div>
+                            <div class="sub-line">ID: ${p.id}${p.ping ? ' · ' + p.ping + 'ms' : ''}</div>
+                        </div>
+                        <div class="actions">
+                            <button class="btn btn-sm btn-warning" onclick="openActionModal('kick', ${p.id}, '${escapeHTML(p.name)}')"><i class="fas fa-door-open"></i> Kick</button>
+                            <button class="btn btn-sm btn-danger" onclick="openActionModal('ban', ${p.id}, '${escapeHTML(p.name)}')"><i class="fas fa-ban"></i> Ban</button>
+                        </div>
+                    </div>
+                `).join("");
+            } catch (e) { console.error("Players error:", e); }
+        }
+
+        /* ===== LOGS ===== */
+        async function fetchLogs() {
+            if (!licenseKey) return;
+            try {
+                const res = await authFetch(API + "/api/server/logs/" + licenseKey);
+                const data = await res.json();
+                const logs = (data.data || []).slice(0, 80);
+                const list = document.getElementById("logList");
+                if (logs.length === 0) {
+                    list.innerHTML = '<div class="empty"><i class="fas fa-file-lines"></i><br>Inga loggar än</div>';
+                    return;
+                }
+                list.innerHTML = logs.map(l => {
+                    let typeClass = "log-info", typeLabel = "INFO";
+                    const msg = (l.message || "").toLowerCase();
+                    if (msg.includes("joined")) { typeClass = "log-join"; typeLabel = "JOIN"; }
+                    else if (msg.includes("left")) { typeClass = "log-leave"; typeLabel = "LEAVE"; }
+                    else if (msg.includes("ban")) { typeClass = "log-ban"; typeLabel = "BAN"; }
+                    else if (msg.includes("explosion") || msg.includes("speed") || msg.includes("noclip") || msg.includes("aim")) {
+                        typeClass = "log-detect"; typeLabel = "DETECT";
+                    }
+                    const time = new Date(l.time).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+                    return `<div class="log-row">
+                        <span class="log-time">${time}</span>
+                        <span class="log-type ${typeClass}">${typeLabel}</span>
+                        <span class="log-message">${escapeHTML(l.message)}</span>
+                    </div>`;
+                }).join("");
+            } catch (e) { console.error("Logs error:", e); }
+        }
+
+        /* ===== BANS ===== */
+        async function fetchBans() {
+            if (!licenseKey) return;
+            try {
+                const res = await authFetch(API + "/api/server/bans/" + licenseKey);
+                const data = await res.json();
+                const bans = data.bans || [];
+                const list = document.getElementById("banList");
+                if (bans.length === 0) {
+                    list.innerHTML = '<div class="empty"><i class="fas fa-ban"></i><br>Inga bans registrerade</div>';
+                    return;
+                }
+                list.innerHTML = bans.map(b => `
+                    <div class="list-row">
+                        <div class="info">
+                            <div class="title-line">${escapeHTML(b.player_name || "Unknown")}</div>
+                            <div class="sub-line">${escapeHTML(b.reason || "Inget skäl")} · #${(b.ban_id || "").slice(-8)}</div>
+                        </div>
+                        <div class="actions">
+                            ${b.evidence_url ? `<button class="btn btn-sm" onclick="viewEvidence('${b.evidence_url}')"><i class="fas fa-image"></i> Bevis</button>` : ""}
+                            ${b.active ? `<button class="btn btn-sm btn-success" onclick="unbanPlayer('${b.ban_id}')"><i class="fas fa-unlock"></i> Unban</button>` : '<span class="pill bad">Inaktiv</span>'}
+                        </div>
+                    </div>
+                `).join("");
+            } catch (e) { console.error("Bans error:", e); }
+        }
+
+        /* ===== ACTIONS ===== */
+        async function send(type, payload) {
+            try {
+                const res = await authFetch(API + "/api/dashboard/action", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ type, payload })
+                });
+                const data = await res.json();
+                return data.success;
+            } catch (e) { console.error(e); return false; }
+        }
+
+        async function openActionModal(type, playerId, playerName) {
+            const opts = {
+                title: type === "kick" ? `Kicka ${playerName}` : `Banna ${playerName}`,
+                message: type === "kick"
+                    ? "Spelaren kommer kunna ansluta igen direkt."
+                    : "Spelaren bannas permanent från servern och kan inte ansluta igen.",
+                iconClass: type === "kick" ? "fas fa-door-open" : "fas fa-ban",
+                iconType: type === "kick" ? "warning" : "danger",
+                okText: type === "kick" ? "Kicka" : "Banna permanent",
+                danger: type === "ban",
+                input1: { label: "Anledning", placeholder: "T.ex. Toxisk i chat" },
+            };
+            const result = await showModal(opts);
+            if (!result) return;
+            const reason = (result.input1 || "").trim();
+            if (!reason) { await customAlert("Du måste ange en anledning.", { iconClass: "fas fa-circle-exclamation", iconType: "warning" }); return; }
+            const payload = { player: playerId, reason };
+            if (type === "ban") payload.duration = "P";
+            const ok = await send(type, payload);
+            if (ok) fetchBans();
+            else await customAlert("Åtgärden misslyckades. Försök igen.", { iconClass: "fas fa-circle-xmark", iconType: "danger" });
+        }
+
+        async function viewEvidence(url) {
+            await showModal({
+                title: "Ban-bevis",
+                message: "",
+                iconClass: "fas fa-image",
+                iconType: "confirm",
+                imageUrl: url,
+                okText: "Stäng",
+                hideCancel: true,
+            });
+        }
+
+        async function unbanPlayer(banId) {
+            const ok = await customConfirm(`Vill du unbanna ${banId.slice(-8)}? Spelaren kan ansluta igen direkt.`, {
+                title: "Unbanna spelare",
+                okText: "Unbanna",
+            });
+            if (!ok) return;
+            try {
+                const res = await authFetch(API + "/api/server/unban/" + banId, { method: "DELETE" });
+                const data = await res.json();
+                if (data.success) fetchBans();
+                else await customAlert("Unban misslyckades.", { iconClass: "fas fa-circle-xmark", iconType: "danger" });
+            } catch (e) { console.error(e); }
+        }
+
+        function copyLicense() {
+            const el = document.getElementById("licenseKeyDisplay");
+            const key = el.innerText;
+            navigator.clipboard?.writeText(key);
+            el.classList.add("copied");
+            setTimeout(() => el.classList.remove("copied"), 1000);
+            customAlert("Licensnyckel kopierad till urklipp.", { title: "Kopierat", iconClass: "fas fa-circle-check", iconType: "confirm" });
+        }
+
+        function openSupport(e) {
+            if (e) e.stopPropagation();
+            window.open("https://discord.com/invite/e433wMpEeW", "_blank");
+        }
+
+        /* ===== NAVIGATION ===== */
+        const VIEW_META = {
+            dashboard: { title: "Dashboard", crumb: "Översikt" },
+            players: { title: "Spelare", crumb: "Server / Spelare" },
+            logs: { title: "Loggar", crumb: "Server / Loggar" },
+            bans: { title: "Bans", crumb: "Server / Bans" },
+            download: { title: "Nedladdning", crumb: "Resurs" },
+        };
+        document.querySelectorAll(".nav-btn[data-view]").forEach(btn => {
+            btn.addEventListener("click", () => {
+                document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+                const view = btn.dataset.view;
+                document.getElementById(view).classList.add("active");
+                const meta = VIEW_META[view] || {};
+                document.getElementById("topbarTitle").innerText = meta.title || view;
+                document.getElementById("topbarCrumb").innerText = meta.crumb || "GhostGuard";
+                if (view === "players") fetchPlayers();
+                if (view === "logs") fetchLogs();
+                if (view === "bans") fetchBans();
+            });
+        });
+
+        /* ===== INIT ===== */
+        (async () => {
+            const me = await loadMe();
+            if (!me) return;
+            renderUser(me);
+            fetchLicense();
+            fetchServer();
+            fetchPlayers();
+            fetchLogs();
+            fetchBans();
+            setInterval(fetchServer, 5000);
+            setInterval(fetchPlayers, 3000);
+            setInterval(fetchLogs, 3000);
+            setInterval(fetchBans, 5000);
+        })();
+
+        /* expose for inline onclicks */
+        window.openActionModal = openActionModal;
+        window.viewEvidence = viewEvidence;
+        window.unbanPlayer = unbanPlayer;
+        window.copyLicense = copyLicense;
+        window.openSupport = openSupport;
+    </script>
 </body>
 </html>

@@ -1,0 +1,1735 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GhostGuard · Owner Panel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #020617;
+            --surface: rgba(2, 6, 23, 0.7);
+            --surface-solid: #0a1226;
+            --surface-elev: rgba(12, 36, 72, 0.4);
+            --surface-hover: rgba(59, 130, 246, 0.08);
+            --border: rgba(255, 255, 255, 0.06);
+            --border-strong: rgba(255, 255, 255, 0.1);
+            --text: #d6e4ff;
+            --text-secondary: #9fb3d9;
+            --text-muted: #7f96c0;
+            --accent: #3b82f6;
+            --accent-hover: #4f93f7;
+            --accent-dark: #1d4ed8;
+            --accent-bg: rgba(59, 130, 246, 0.12);
+            --success: #4ade80;
+            --success-bg: rgba(74, 222, 128, 0.12);
+            --danger: #f87171;
+            --danger-bg: rgba(248, 113, 113, 0.12);
+            --warning: #fbbf24;
+            --warning-bg: rgba(251, 191, 36, 0.12);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --radius-lg: 18px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-size: 14px;
+            background: radial-gradient(circle at top, #0c2448, #020617 70%);
+            color: var(--text);
+            line-height: 1.5;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .app {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            min-height: 100vh;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            background: rgba(2, 6, 23, 0.85);
+            border-right: 1px solid var(--border);
+            padding: 22px 16px;
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.6);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px 22px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 18px;
+        }
+        .brand-dot {
+            width: 28px; height: 28px;
+            background: linear-gradient(135deg, var(--accent), #4f6dd9);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 14px rgba(97, 136, 255, 0.35);
+        }
+        .brand-dot i { color: white; font-size: 14px; }
+        .brand-name {
+            font-weight: 700;
+            font-size: 15px;
+            letter-spacing: -0.2px;
+        }
+        .brand-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .nav-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 4px 12px 8px;
+        }
+
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            width: 100%;
+            padding: 9px 12px;
+            background: transparent;
+            border: none;
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-size: 13.5px;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            margin-bottom: 2px;
+            transition: all 0.12s ease;
+            text-align: left;
+        }
+        .nav-btn i {
+            width: 16px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .nav-btn:hover {
+            background: var(--surface-hover);
+            color: var(--text);
+        }
+        .nav-btn:hover i { color: var(--text-secondary); }
+        .nav-btn.active {
+            background: var(--accent-bg);
+            color: var(--accent);
+            font-weight: 600;
+        }
+        .nav-btn.active i { color: var(--accent); }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .user-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: var(--radius-sm);
+        }
+        .user-avatar {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4f6dd9, #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        .user-avatar img { width: 100%; height: 100%; border-radius: 50%; }
+        .user-info { flex: 1; min-width: 0; }
+        .user-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .user-id {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .icon-btn {
+            width: 28px; height: 28px;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.12s;
+        }
+        .icon-btn:hover {
+            background: var(--surface-hover);
+            color: var(--text);
+        }
+
+        /* ===== MAIN ===== */
+        .main {
+            min-width: 0;
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 32px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(2, 6, 23, 0.85);
+            backdrop-filter: blur(16px);
+        }
+
+        .topbar-title {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .topbar-title h1 {
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+        }
+        .topbar-title .crumb {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .content {
+            padding: 28px 32px 60px;
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        /* ===== ANIMATIONS ===== */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(8px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-12px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+        }
+
+        /* ===== VIEW ===== */
+        .view { display: none; }
+        .view.active {
+            display: block;
+            animation: fadeUp 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .view.active .card,
+        .view.active .stat-card {
+            animation: fadeUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+        }
+        .view.active .stat-card:nth-child(1) { animation-delay: 0.04s; }
+        .view.active .stat-card:nth-child(2) { animation-delay: 0.1s; }
+        .view.active .stat-card:nth-child(3) { animation-delay: 0.16s; }
+        .view.active .card:nth-of-type(1) { animation-delay: 0.2s; }
+        .view.active .card:nth-of-type(2) { animation-delay: 0.26s; }
+
+        .nav-btn { position: relative; }
+        .nav-btn::before {
+            content: "";
+            position: absolute;
+            left: 0; top: 50%;
+            transform: translateY(-50%) scaleY(0.5);
+            width: 3px; height: 60%;
+            background: var(--accent);
+            border-radius: 0 3px 3px 0;
+            box-shadow: 0 0 12px var(--accent);
+            opacity: 0;
+            transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .nav-btn.active::before {
+            opacity: 1;
+            transform: translateY(-50%) scaleY(1);
+        }
+        .nav-btn:active { transform: scale(0.97); }
+        .btn { transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1); }
+        .btn:active { transform: scale(0.96); }
+
+        tbody tr {
+            animation: fadeUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+        }
+        tbody tr:nth-child(1) { animation-delay: 0.02s; }
+        tbody tr:nth-child(2) { animation-delay: 0.05s; }
+        tbody tr:nth-child(3) { animation-delay: 0.08s; }
+        tbody tr:nth-child(4) { animation-delay: 0.11s; }
+        tbody tr:nth-child(5) { animation-delay: 0.14s; }
+        tbody tr:nth-child(6) { animation-delay: 0.17s; }
+        tbody tr:nth-child(7) { animation-delay: 0.2s; }
+
+        .pill.good::before { animation: pulse 2s infinite; }
+
+        .sidebar { animation: slideInLeft 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .topbar { animation: fadeIn 0.5s ease; }
+        .user-card { animation: fadeIn 0.5s ease 0.1s backwards; }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 8px 14px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-strong);
+            background: var(--surface);
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.12s;
+            white-space: nowrap;
+        }
+        .btn:hover {
+            background: var(--surface-hover);
+            border-color: rgba(148, 163, 184, 0.2);
+        }
+        .btn i { font-size: 12px; }
+        .btn-primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 1px 0 rgba(255,255,255,0.1) inset, 0 4px 12px rgba(97, 136, 255, 0.25);
+        }
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+        }
+        .btn-success {
+            background: var(--success-bg);
+            border-color: rgba(52, 211, 153, 0.25);
+            color: var(--success);
+        }
+        .btn-success:hover {
+            background: rgba(52, 211, 153, 0.18);
+        }
+        .btn-danger {
+            background: var(--danger-bg);
+            border-color: rgba(248, 113, 113, 0.25);
+            color: var(--danger);
+        }
+        .btn-danger:hover {
+            background: rgba(248, 113, 113, 0.18);
+        }
+        .btn-danger-outline {
+            background: transparent;
+            border-color: rgba(248, 113, 113, 0.3);
+            color: var(--danger);
+        }
+        .btn-danger-outline:hover {
+            background: var(--danger-bg);
+        }
+        .btn-blue { background: var(--accent-bg); border-color: rgba(97, 136, 255, 0.25); color: var(--accent); }
+        .btn-blue:hover { background: rgba(97, 136, 255, 0.18); }
+        .btn-green { background: var(--success); border-color: var(--success); color: #052e1c; font-weight: 600; }
+        .btn-green:hover { background: #2ec48a; }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
+        .btn-ghost { background: transparent; border-color: transparent; }
+        .btn-ghost:hover { background: var(--surface-hover); }
+
+        /* ===== CARDS ===== */
+        .card {
+            background: rgba(2, 6, 23, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 12px 30px -10px rgba(0,0,0,0.4);
+            transition: border-color 0.2s;
+        }
+        .card:hover { border-color: rgba(59, 130, 246, 0.2); }
+        .card-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 18px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+        .card-title h3 {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: -0.1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card-title h3 i {
+            color: var(--accent);
+            font-size: 13px;
+        }
+        .card-desc {
+            font-size: 12.5px;
+            color: var(--text-muted);
+            margin-top: 1px;
+            font-weight: 400;
+        }
+
+        /* ===== STATS ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin-bottom: 22px;
+        }
+        .stat-card {
+            background: rgba(2, 6, 23, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 22px 24px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+        .stat-card:hover {
+            border-color: rgba(59, 130, 246, 0.25);
+            transform: translateY(-1px);
+        }
+        .stat-icon {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+        }
+        .stat-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 14px;
+        }
+        .stat-value {
+            font-size: 30px;
+            font-weight: 700;
+            letter-spacing: -1px;
+            color: var(--text);
+            line-height: 1;
+            margin-bottom: 8px;
+            font-variant-numeric: tabular-nums;
+        }
+        .stat-sub {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .stat-sub.positive { color: var(--success); }
+        .stat-sub.negative { color: var(--danger); }
+
+        .stat-card.licenses .stat-icon { background: var(--accent-bg); color: var(--accent); }
+        .stat-card.customers .stat-icon { background: rgba(168, 85, 247, 0.12); color: #c084fc; }
+        .stat-card.bans .stat-icon { background: var(--danger-bg); color: var(--danger); }
+
+        /* ===== FORM ===== */
+        label {
+            display: block;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px 14px;
+            font-family: inherit;
+            font-size: 14px;
+            color: var(--text);
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            transition: all 0.15s;
+            outline: none;
+        }
+        input:focus, textarea:focus {
+            border-color: var(--accent);
+            background: rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        input::placeholder { color: var(--text-muted); }
+        input.mono { font-family: 'JetBrains Mono', monospace; font-size: 13.5px; letter-spacing: 0.3px; }
+
+        /* ===== CUSTOM DROPDOWN ===== */
+        .dropdown {
+            position: relative;
+            width: 100%;
+        }
+        .dropdown-trigger {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 14px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.15s;
+        }
+        .dropdown-trigger:hover {
+            border-color: rgba(59, 130, 246, 0.3);
+            background: rgba(0, 0, 0, 0.5);
+        }
+        .dropdown.open .dropdown-trigger {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        .dropdown-trigger i.chevron {
+            font-size: 11px;
+            color: var(--text-muted);
+            transition: transform 0.2s;
+        }
+        .dropdown.open .dropdown-trigger i.chevron { transform: rotate(180deg); }
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            right: 0;
+            background: rgba(10, 18, 38, 0.98);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            padding: 6px;
+            box-shadow: 0 16px 40px -10px rgba(0,0,0,0.7);
+            z-index: 100;
+            opacity: 0;
+            transform: translateY(-4px);
+            pointer-events: none;
+            transition: all 0.15s ease;
+        }
+        .dropdown.open .dropdown-menu {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 13.5px;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+        .dropdown-item:hover {
+            background: var(--accent-bg);
+            color: var(--text);
+        }
+        .dropdown-item.selected {
+            background: var(--accent-bg);
+            color: var(--accent);
+            font-weight: 500;
+        }
+        .dropdown-item i { font-size: 11px; opacity: 0; }
+        .dropdown-item.selected i { opacity: 1; }
+
+        /* ===== CUSTOM MODAL ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.75);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            padding: 20px;
+        }
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal {
+            background: rgba(10, 18, 38, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            max-width: 440px;
+            width: 100%;
+            box-shadow: 0 30px 80px -10px rgba(0,0,0,0.8);
+            transform: translateY(10px) scale(0.98);
+            transition: transform 0.2s ease;
+        }
+        .modal-overlay.open .modal { transform: translateY(0) scale(1); }
+        .modal-icon {
+            width: 48px; height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-bottom: 18px;
+        }
+        .modal-icon.confirm { background: var(--accent-bg); color: var(--accent); }
+        .modal-icon.danger { background: var(--danger-bg); color: var(--danger); }
+        .modal-icon.success { background: var(--success-bg); color: var(--success); }
+        .modal-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 6px;
+            letter-spacing: -0.2px;
+        }
+        .modal-message {
+            color: var(--text-secondary);
+            font-size: 13.5px;
+            line-height: 1.55;
+            margin-bottom: 20px;
+        }
+        .modal-input {
+            margin-bottom: 20px;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+            align-items: end;
+        }
+        .form-row .actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 18px;
+        }
+        .field-group {
+            display: flex;
+            gap: 8px;
+        }
+        .field-group input {
+            flex: 1;
+        }
+
+        .msg {
+            margin-top: 10px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            min-height: 16px;
+        }
+
+        /* ===== TABLE ===== */
+        .table-wrap {
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        thead {
+            background: rgba(255, 255, 255, 0.015);
+        }
+        thead th {
+            padding: 11px 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            border-bottom: 1px solid var(--border);
+        }
+        tbody td {
+            padding: 13px 16px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+            vertical-align: middle;
+        }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr { transition: background 0.1s; }
+        tbody tr:hover { background: rgba(255, 255, 255, 0.015); }
+
+        td.mono { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--text-secondary); }
+        td.actions { display: flex; gap: 6px; justify-content: flex-end; }
+
+        /* ===== PILL/BADGE ===== */
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 9px;
+            font-size: 11.5px;
+            font-weight: 600;
+            border-radius: 999px;
+            border: 1px solid;
+        }
+        .pill::before {
+            content: "";
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            box-shadow: 0 0 8px currentColor;
+        }
+        .pill.good {
+            color: var(--success);
+            background: var(--success-bg);
+            border-color: rgba(52, 211, 153, 0.2);
+        }
+        .pill.bad {
+            color: var(--text-muted);
+            background: rgba(91, 102, 128, 0.1);
+            border-color: rgba(91, 102, 128, 0.2);
+        }
+        .pill.bad::before { box-shadow: none; }
+
+        /* ===== FILTER BAR ===== */
+        .filter-bar {
+            display: flex;
+            gap: 4px;
+            padding: 4px;
+            background: var(--bg);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            width: fit-content;
+            margin-bottom: 16px;
+        }
+        .filter-bar .btn {
+            background: transparent;
+            border: none;
+            padding: 6px 12px;
+            color: var(--text-secondary);
+        }
+        .filter-bar .btn.active, .filter-bar .btn.btn-blue {
+            background: var(--surface-hover);
+            color: var(--text);
+            border: none;
+        }
+
+        /* ===== EMPTY STATE ===== */
+        .empty {
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .quick-copy {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            background: var(--bg);
+            border: 1px dashed var(--border-strong);
+            border-radius: var(--radius-sm);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: var(--accent);
+            min-height: 39px;
+        }
+        .quick-copy input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--accent);
+            font-family: inherit;
+            font-size: 13px;
+            padding: 0;
+        }
+        .quick-copy input:focus { box-shadow: none; background: transparent; }
+
+        @media (max-width: 768px) {
+            .app { grid-template-columns: 1fr; }
+            .sidebar { position: relative; height: auto; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .content { padding: 20px; }
+            .topbar { padding: 14px 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-dot"><i class="fas fa-shield-halved"></i></div>
+                <div>
+                    <div class="brand-name">GhostGuard</div>
+                    <div class="brand-sub">Owner</div>
+                </div>
+            </div>
+
+            <div class="nav-label">Översikt</div>
+            <button class="nav-btn active" data-view="dashboard">
+                <i class="fas fa-chart-pie"></i> Dashboard
+            </button>
+
+            <div class="nav-label" style="margin-top: 14px;">Hantering</div>
+            <button class="nav-btn" data-view="licenses">
+                <i class="fas fa-key"></i> Licenser
+            </button>
+            <button class="nav-btn" data-view="customers">
+                <i class="fas fa-users"></i> Kunder
+            </button>
+
+            <div class="nav-label" style="margin-top: 14px;">Övervakning</div>
+            <button class="nav-btn" data-view="bans">
+                <i class="fas fa-ban"></i> Bans
+            </button>
+            <button class="nav-btn" data-view="servers">
+                <i class="fas fa-server"></i> Servrar
+            </button>
+
+            <div class="sidebar-footer">
+                <div class="user-card" id="adminUserInfo">
+                    <div class="user-avatar">
+                        <img id="adminAvatar" style="display:none;"/>
+                        <span id="adminInitial">A</span>
+                    </div>
+                    <div class="user-info">
+                        <div class="user-name" id="adminUsername">-</div>
+                        <div class="user-id" id="adminDiscordId">-</div>
+                    </div>
+                    <button class="icon-btn" id="logoutBtn" title="Logga ut">
+                        <i class="fas fa-arrow-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main">
+            <header class="topbar">
+                <div class="topbar-title">
+                    <div class="crumb" id="topbarCrumb">GhostGuard</div>
+                    <h1 id="topbarTitle">Dashboard</h1>
+                </div>
+                <div class="topbar-actions">
+                    <button class="btn" id="refresh">
+                        <i class="fas fa-arrows-rotate"></i> Uppdatera
+                    </button>
+                </div>
+            </header>
+
+            <div class="content">
+
+                <!-- ===== DASHBOARD ===== -->
+                <div class="view active" id="dashboard">
+                    <div class="stats-grid">
+                        <div class="stat-card licenses">
+                            <div class="stat-icon"><i class="fas fa-key"></i></div>
+                            <div class="stat-label">Licenser</div>
+                            <div class="stat-value" id="statLicenses">—</div>
+                            <div class="stat-sub positive" id="statActiveLicenses">— aktiva</div>
+                        </div>
+                        <div class="stat-card customers">
+                            <div class="stat-icon"><i class="fas fa-users"></i></div>
+                            <div class="stat-label">Kunder</div>
+                            <div class="stat-value" id="statCustomers">—</div>
+                            <div class="stat-sub positive" id="statActiveCustomers">— aktiva</div>
+                        </div>
+                        <div class="stat-card bans">
+                            <div class="stat-icon"><i class="fas fa-ban"></i></div>
+                            <div class="stat-label">Aktiva bans</div>
+                            <div class="stat-value" id="statBans">—</div>
+                            <div class="stat-sub" id="statTotalBans">— totalt</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">
+                            <div>
+                                <h3><i class="fas fa-bolt"></i> Snabbåtgärder</h3>
+                                <div class="card-desc">Skapa en ny licens för en kund</div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div>
+                                <label>Varaktighet</label>
+                                <div class="dropdown" data-value="30">
+                                    <button type="button" class="dropdown-trigger">
+                                        <span class="dropdown-label">30 dagar (Monthly)</span>
+                                        <i class="fas fa-chevron-down chevron"></i>
+                                    </button>
+                                    <div class="dropdown-menu">
+                                        <div class="dropdown-item selected" data-value="30">
+                                            <i class="fas fa-check"></i> 30 dagar (Monthly)
+                                        </div>
+                                        <div class="dropdown-item" data-value="90">
+                                            <i class="fas fa-check"></i> 90 dagar (Quarterly)
+                                        </div>
+                                        <div class="dropdown-item" data-value="lifetime">
+                                            <i class="fas fa-check"></i> Livstid
+                                        </div>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="licenseDuration" value="30"/>
+                            </div>
+                            <div>
+                                <label>Genererad nyckel</label>
+                                <div class="quick-copy">
+                                    <input id="newLicense" readonly placeholder="GG-XXXX-XXXX visas här"/>
+                                </div>
+                            </div>
+                            <div class="actions">
+                                <button class="btn btn-primary" id="createLicense">
+                                    <i class="fas fa-plus"></i> Skapa licens
+                                </button>
+                            </div>
+                        </div>
+                        <div class="msg" id="licMsg"></div>
+                    </div>
+                </div>
+
+                <!-- ===== LICENSER ===== -->
+                <div class="view" id="licenses">
+                    <div class="card">
+                        <div class="card-title">
+                            <div>
+                                <h3><i class="fas fa-table-list"></i> Alla licenser</h3>
+                                <div class="card-desc">Totalt antal genererade licensnycklar</div>
+                            </div>
+                        </div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Nyckel</th>
+                                        <th>Status</th>
+                                        <th>Skapad</th>
+                                        <th>Utgår</th>
+                                        <th style="text-align:right;">Åtgärder</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody"></tbody>
+                            </table>
+                        </div>
+                        <div class="msg" id="listMsg"></div>
+                    </div>
+                </div>
+
+                <!-- ===== KUNDER ===== -->
+                <div class="view" id="customers">
+                    <div class="card">
+                        <div class="card-title">
+                            <div>
+                                <h3><i class="fas fa-user-plus"></i> Lägg till kund</h3>
+                                <div class="card-desc">Koppla en Discord-användare till en licensnyckel</div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div>
+                                <label>Discord-ID</label>
+                                <input id="cu" class="mono" placeholder="123456789012345678"/>
+                            </div>
+                            <div>
+                                <label>Licensnyckel</label>
+                                <input id="ck" class="mono" placeholder="GG-XXXX-XXXX"/>
+                            </div>
+                            <div class="actions">
+                                <button class="btn btn-primary" id="createCustomer">
+                                    <i class="fas fa-plus"></i> Skapa kund
+                                </button>
+                            </div>
+                        </div>
+                        <div class="msg" id="custMsg"></div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">
+                            <div>
+                                <h3><i class="fas fa-users"></i> Alla kunder</h3>
+                                <div class="card-desc">Kunder med kopplad licens och Discord-konto</div>
+                            </div>
+                        </div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Kund</th>
+                                        <th>Status</th>
+                                        <th>Skapad</th>
+                                        <th style="text-align:right;">Åtgärder</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="customerTable"></tbody>
+                            </table>
+                        </div>
+                        <div class="msg" id="customerListMsg"></div>
+                    </div>
+                </div>
+
+                <!-- ===== BANS ===== -->
+                <div class="view" id="bans">
+                    <div class="card">
+                        <div class="card-title">
+                            <div>
+                                <h3><i class="fas fa-ban"></i> Alla bans</h3>
+                                <div class="card-desc">Bannade spelare över samtliga kund-servrar</div>
+                            </div>
+                        </div>
+                        <div class="filter-bar">
+                            <button class="btn btn-blue" id="filterAllBans">Alla</button>
+                            <button class="btn" id="filterActiveBans">Aktiva</button>
+                            <button class="btn" id="filterInactiveBans">Inaktiva</button>
+                        </div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Spelare</th>
+                                        <th>Anledning</th>
+                                        <th>Banned by</th>
+                                        <th>Status</th>
+                                        <th>Datum</th>
+                                        <th style="text-align:right;">Åtgärd</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bansTable"></tbody>
+                            </table>
+                        </div>
+                        <div class="msg" id="bansMsg"></div>
+                    </div>
+                </div>
+
+                <!-- ===== SERVRAR ===== -->
+                <div class="view" id="servers">
+                    <div class="card">
+                        <div class="card-title">
+                            <div>
+                                <h3><i class="fas fa-server"></i> Server-översikt</h3>
+                                <div class="card-desc">Realtidsstatus över alla anslutna FiveM-servrar</div>
+                            </div>
+                        </div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Server</th>
+                                        <th>Status</th>
+                                        <th>Spelare</th>
+                                        <th>Version</th>
+                                        <th>Bans</th>
+                                        <th>Detect 24h</th>
+                                        <th>Senast sedd</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="serversTable"></tbody>
+                            </table>
+                        </div>
+                        <div class="msg" id="serversMsg"></div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-icon confirm" id="modalIcon"><i class="fas fa-circle-question"></i></div>
+            <div class="modal-title" id="modalTitle">Bekräfta</div>
+            <div class="modal-message" id="modalMessage">Är du säker?</div>
+            <div class="modal-input" id="modalInputWrap" style="display:none;">
+                <input id="modalInput" type="text"/>
+            </div>
+            <div class="modal-actions">
+                <button class="btn" id="modalCancel">Avbryt</button>
+                <button class="btn btn-primary" id="modalOk">Bekräfta</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ===== CUSTOM MODAL ===== */
+        const modalState = { resolver: null };
+        const modalEls = {
+            overlay: document.getElementById("modalOverlay"),
+            icon: document.getElementById("modalIcon"),
+            title: document.getElementById("modalTitle"),
+            message: document.getElementById("modalMessage"),
+            inputWrap: document.getElementById("modalInputWrap"),
+            input: document.getElementById("modalInput"),
+            cancel: document.getElementById("modalCancel"),
+            ok: document.getElementById("modalOk"),
+        };
+
+        function closeModal(result) {
+            modalEls.overlay.classList.remove("open");
+            if (modalState.resolver) {
+                modalState.resolver(result);
+                modalState.resolver = null;
+            }
+        }
+
+        modalEls.cancel.onclick = () => closeModal(null);
+        modalEls.overlay.addEventListener("click", e => {
+            if (e.target === modalEls.overlay) closeModal(null);
+        });
+        document.addEventListener("keydown", e => {
+            if (!modalEls.overlay.classList.contains("open")) return;
+            if (e.key === "Escape") closeModal(null);
+            if (e.key === "Enter") {
+                modalEls.ok.click();
+            }
+        });
+
+        function showModal({ title, message, iconClass, iconType, okText, cancelText, danger, withInput, defaultValue }) {
+            return new Promise(resolve => {
+                modalState.resolver = resolve;
+                modalEls.title.innerText = title || "Bekräfta";
+                modalEls.message.innerText = message || "";
+                modalEls.icon.className = "modal-icon " + (iconType || "confirm");
+                modalEls.icon.innerHTML = `<i class="${iconClass || "fas fa-circle-question"}"></i>`;
+                modalEls.ok.innerText = okText || "Bekräfta";
+                modalEls.cancel.innerText = cancelText || "Avbryt";
+                modalEls.ok.className = "btn " + (danger ? "btn-danger" : "btn-primary");
+                if (withInput) {
+                    modalEls.inputWrap.style.display = "block";
+                    modalEls.input.value = defaultValue || "";
+                    setTimeout(() => modalEls.input.focus(), 50);
+                    modalEls.ok.onclick = () => closeModal(modalEls.input.value);
+                } else {
+                    modalEls.inputWrap.style.display = "none";
+                    modalEls.ok.onclick = () => closeModal(true);
+                }
+                modalEls.overlay.classList.add("open");
+            });
+        }
+
+        function customConfirm(message, opts = {}) {
+            return showModal({
+                title: opts.title || "Bekräfta åtgärd",
+                message,
+                iconClass: opts.danger ? "fas fa-triangle-exclamation" : "fas fa-circle-question",
+                iconType: opts.danger ? "danger" : "confirm",
+                okText: opts.okText || "Bekräfta",
+                danger: opts.danger,
+            }).then(r => r === true);
+        }
+
+        function customPrompt(message, defaultValue, opts = {}) {
+            return showModal({
+                title: opts.title || "Mata in värde",
+                message,
+                iconClass: "fas fa-pen-to-square",
+                iconType: "confirm",
+                okText: opts.okText || "Spara",
+                withInput: true,
+                defaultValue,
+            });
+        }
+
+        function customAlert(message, opts = {}) {
+            return showModal({
+                title: opts.title || "Information",
+                message,
+                iconClass: opts.iconClass || "fas fa-circle-info",
+                iconType: opts.iconType || "confirm",
+                okText: "OK",
+                cancelText: "Stäng",
+            });
+        }
+
+        /* ===== CUSTOM DROPDOWN ===== */
+        document.querySelectorAll(".dropdown").forEach(dd => {
+            const trigger = dd.querySelector(".dropdown-trigger");
+            const label = dd.querySelector(".dropdown-label");
+            const items = dd.querySelectorAll(".dropdown-item");
+            const hiddenInputId = dd.parentElement.querySelector('input[type="hidden"]')?.id;
+
+            trigger.onclick = (e) => {
+                e.stopPropagation();
+                document.querySelectorAll(".dropdown.open").forEach(d => {
+                    if (d !== dd) d.classList.remove("open");
+                });
+                dd.classList.toggle("open");
+            };
+
+            items.forEach(item => {
+                item.onclick = () => {
+                    items.forEach(i => i.classList.remove("selected"));
+                    item.classList.add("selected");
+                    label.innerText = item.innerText.trim();
+                    const value = item.dataset.value;
+                    dd.dataset.value = value;
+                    if (hiddenInputId) {
+                        document.getElementById(hiddenInputId).value = value;
+                    }
+                    dd.classList.remove("open");
+                };
+            });
+        });
+        document.addEventListener("click", () => {
+            document.querySelectorAll(".dropdown.open").forEach(d => d.classList.remove("open"));
+        });
+
+        const DEV_MODE = window.location.protocol === "file:" || window.location.hostname === "localhost";
+        const API_BASE = window.location.origin;
+
+        const DEV_DATA = {
+            user: { discord_id: "1289995419606192270", username: "Dev Admin", avatar: null },
+            stats: { totalLicenses: 12, activeLicenses: 9, totalCustomers: 8, activeCustomers: 6, totalBans: 47, activeBans: 23 },
+            licenses: [
+                { license_key: "GG-A1B2-C3D4", status: "ACTIVE", plan: "monthly", expires_at: "2026-06-17T00:00:00Z", created_at: "2026-05-17T00:00:00Z" },
+                { license_key: "GG-E5F6-G7H8", status: "ACTIVE", plan: "lifetime", expires_at: null, created_at: "2026-04-12T00:00:00Z" },
+                { license_key: "GG-I9J0-K1L2", status: "SUSPENDED", plan: "quarterly", expires_at: "2026-07-12T00:00:00Z", created_at: "2026-04-12T00:00:00Z" },
+            ],
+            customers: [
+                { id: "c1", discord_id: "1289995419606192270", discord_name: "reluxe", license_key: "GG-A1B2-C3D4", active: true, created_at: "2026-05-17T00:00:00Z" },
+                { id: "c2", discord_id: "730460903413121135", discord_name: "ghostbuster", license_key: "GG-E5F6-G7H8", active: true, created_at: "2026-04-12T00:00:00Z" },
+                { id: "c3", discord_id: "999888777666555444", discord_name: "testkund", license_key: "GG-I9J0-K1L2", active: false, created_at: "2026-04-12T00:00:00Z" },
+            ],
+            bans: [
+                { ban_id: "GG-1234567", license_key: "GG-A1B2-C3D4", player_name: "Cheater123", reason: "Speed hack", banned_by: "AutoMod", active: true, created_at: "2026-05-17T00:00:00Z" },
+                { ban_id: "GG-7654321", license_key: "GG-E5F6-G7H8", player_name: "Hacker456", reason: "Aimbot", banned_by: "admin", active: true, created_at: "2026-05-16T00:00:00Z" },
+            ],
+            servers: [
+                { license_key: "GG-A1B2-C3D4", server_name: "Test Server #1", online: true, player_count: 24, max_players: 64, version: "2.0.0", active_bans: 5, logs_24h: 142, detections_24h: 8, plan: "monthly", server_last_seen: new Date().toISOString() },
+                { license_key: "GG-E5F6-G7H8", server_name: "PvP Network", online: false, player_count: 0, max_players: 128, version: "2.0.0", active_bans: 18, logs_24h: 0, detections_24h: 0, plan: "lifetime", server_last_seen: "2026-05-15T10:00:00Z" },
+            ],
+        };
+
+        async function checkAuth() {
+            if (DEV_MODE) return DEV_DATA.user;
+            try {
+                const res = await authFetch(API_BASE + "/admin/me", { credentials: "include" });
+                if (!res.ok) { window.location.href = "/auth/discord"; return null; }
+                const data = await res.json();
+                if (!data.success) { window.location.href = "/auth/discord"; return null; }
+                return data.user;
+            } catch {
+                window.location.href = "/auth/discord";
+                return null;
+            }
+        }
+
+        function renderUser(user) {
+            document.getElementById("adminUsername").innerText = user.username;
+            document.getElementById("adminDiscordId").innerText = user.discord_id;
+            document.getElementById("adminInitial").innerText = (user.username || "?").charAt(0).toUpperCase();
+            if (user.avatar) {
+                const img = document.getElementById("adminAvatar");
+                img.src = `https://cdn.discordapp.com/avatars/${user.discord_id}/${user.avatar}.png?size=64`;
+                img.style.display = "block";
+                document.getElementById("adminInitial").style.display = "none";
+            }
+        }
+
+        document.getElementById("logoutBtn").onclick = async () => {
+            await authFetch(API_BASE + "/auth/logout", { method: "POST", credentials: "include" });
+            window.location.href = "/";
+        };
+
+        function authHeaders() { return { "Content-Type": "application/json" }; }
+
+        function mockResponse(data) {
+            return Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve(data),
+                text: () => Promise.resolve(JSON.stringify(data)),
+            });
+        }
+
+        function devMock(url, opts) {
+            const method = (opts.method || "GET").toUpperCase();
+            const path = url.replace(API_BASE, "");
+            if (path === "/admin/me") return mockResponse({ success: true, user: DEV_DATA.user });
+            if (path === "/admin/stats") return mockResponse({ success: true, stats: DEV_DATA.stats });
+            if (path === "/admin/licenses") return mockResponse({ success: true, data: DEV_DATA.licenses });
+            if (path === "/admin/customers") return mockResponse({ success: true, data: DEV_DATA.customers });
+            if (path === "/admin/bans") return mockResponse({ success: true, data: DEV_DATA.bans });
+            if (path === "/admin/servers") return mockResponse({ success: true, data: DEV_DATA.servers });
+            if (path === "/admin/create-license" && method === "POST") {
+                const newKey = "GG-" + Math.random().toString(16).slice(2, 6).toUpperCase() + "-" + Math.random().toString(16).slice(2, 6).toUpperCase();
+                DEV_DATA.licenses.unshift({ license_key: newKey, status: "ACTIVE", plan: "monthly", expires_at: new Date(Date.now() + 30 * 86400000).toISOString(), created_at: new Date().toISOString() });
+                DEV_DATA.stats.totalLicenses++; DEV_DATA.stats.activeLicenses++;
+                return mockResponse({ success: true, license_key: newKey });
+            }
+            if (path === "/admin/create-customer" && method === "POST") {
+                const body = JSON.parse(opts.body || "{}");
+                DEV_DATA.customers.unshift({ id: "c" + Date.now(), discord_id: body.discord_id, discord_name: "Mock User", license_key: body.license_key, active: true, created_at: new Date().toISOString() });
+                DEV_DATA.stats.totalCustomers++; DEV_DATA.stats.activeCustomers++;
+                return mockResponse({ success: true });
+            }
+            if (path.startsWith("/admin/delete-license/") && method === "DELETE") {
+                const key = path.split("/").pop();
+                DEV_DATA.licenses = DEV_DATA.licenses.filter(l => l.license_key !== key);
+                return mockResponse({ success: true });
+            }
+            if (path.startsWith("/admin/delete-customer/") && method === "DELETE") {
+                const id = path.split("/").pop();
+                DEV_DATA.customers = DEV_DATA.customers.filter(c => c.id !== id);
+                return mockResponse({ success: true });
+            }
+            if (path === "/admin/toggle-license" && method === "POST") {
+                const body = JSON.parse(opts.body || "{}");
+                const lic = DEV_DATA.licenses.find(l => l.license_key === body.license_key);
+                if (lic) lic.status = body.status;
+                return mockResponse({ success: true });
+            }
+            if (path === "/admin/toggle-customer" && method === "POST") {
+                const body = JSON.parse(opts.body || "{}");
+                const cust = DEV_DATA.customers.find(c => c.id === body.id);
+                if (cust) cust.active = body.active;
+                return mockResponse({ success: true });
+            }
+            if (path === "/admin/unban" && method === "POST") {
+                const body = JSON.parse(opts.body || "{}");
+                const ban = DEV_DATA.bans.find(b => b.ban_id === body.ban_id);
+                if (ban) ban.active = false;
+                return mockResponse({ success: true });
+            }
+            if (path === "/admin/update-customer-discord" && method === "POST") {
+                const body = JSON.parse(opts.body || "{}");
+                const cust = DEV_DATA.customers.find(c => c.id === body.id);
+                if (cust) cust.discord_id = body.discord_id;
+                return mockResponse({ success: true });
+            }
+            console.warn("[DEV] Unmocked endpoint:", method, path);
+            return mockResponse({ success: false, error: "DEV_UNMOCKED" });
+        }
+
+        function authFetch(url, opts = {}) {
+            if (DEV_MODE) return devMock(url, opts);
+            return fetch(url, { ...opts, credentials: "include" });
+        }
+
+        function statusPill(s) {
+            const ok = (s === "ACTIVE");
+            const cls = ok ? "good" : "bad";
+            return `<span class="pill ${cls}">${s || "-"}</span>`;
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return "Livstid";
+            const d = new Date(dateStr);
+            return d.toLocaleDateString("sv-SE", { year: "numeric", month: "short", day: "numeric" });
+        }
+
+        async function safeJson(res) {
+            const text = await res.text();
+            try { return JSON.parse(text); } catch { return null; }
+        }
+
+        /* ===== LICENSES ===== */
+        async function loadLicenses() {
+            try {
+                const res = await authFetch(API_BASE + "/admin/licenses", { headers: authHeaders() });
+                const json = await safeJson(res);
+                if (!res.ok || !json?.success) return;
+                const rows = (json.data || []).map(l => {
+                    const isActive = l.status === "ACTIVE";
+                    const next = isActive ? "DISABLED" : "ACTIVE";
+                    return `
+                        <tr>
+                            <td class="mono">${l.license_key}</td>
+                            <td>${statusPill(l.status)}</td>
+                            <td>${formatDate(l.created_at)}</td>
+                            <td>${formatDate(l.expires_at)}</td>
+                            <td class="actions">
+                                <button class="btn btn-sm ${isActive ? 'btn-danger' : 'btn-success'}" onclick="toggleLicense('${l.license_key}','${next}')">
+                                    ${isActive ? 'Stäng av' : 'Aktivera'}
+                                </button>
+                                <button class="btn btn-sm btn-danger-outline" onclick="deleteLicense('${l.license_key}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join("");
+                document.getElementById("tbody").innerHTML = rows || '<tr><td colspan="5" class="empty">Inga licenser ännu</td></tr>';
+            } catch (e) { console.error(e); }
+        }
+
+        async function toggleLicense(key, status) {
+            try {
+                await authFetch(API_BASE + "/admin/toggle-license", { method: "POST", headers: authHeaders(), body: JSON.stringify({ license_key: key, status }) });
+                loadLicenses();
+            } catch (e) { console.error(e); }
+        }
+
+        async function deleteLicense(key) {
+            const ok = await customConfirm(`Är du säker på att du vill ta bort licensen ${key}? Åtgärden går inte att ångra.`, {
+                title: "Ta bort licens",
+                okText: "Ta bort",
+                danger: true,
+            });
+            if (!ok) return;
+            try {
+                await authFetch(API_BASE + "/admin/delete-license/" + key, { method: "DELETE", headers: authHeaders() });
+                loadLicenses();
+                loadStats();
+            } catch (e) { console.error(e); }
+        }
+
+        /* ===== CUSTOMERS ===== */
+        async function loadCustomers() {
+            try {
+                const res = await authFetch(API_BASE + "/admin/customers", { headers: authHeaders() });
+                const json = await safeJson(res);
+                if (!res.ok || !json?.success) return;
+                const rows = (json.data || []).map(c => {
+                    const isActive = c.active === true;
+                    const displayName = c.discord_name || c.username || c.discord_id || "-";
+                    return `
+                        <tr>
+                            <td>
+                                <div style="font-weight:500;">${displayName}</div>
+                                <div style="font-size:11px;color:var(--text-muted);margin-top:2px;font-family:'JetBrains Mono',monospace;">
+                                    ${c.discord_id || "-"} · ${c.license_key}
+                                </div>
+                            </td>
+                            <td>${statusPill(isActive ? "ACTIVE" : "DISABLED")}</td>
+                            <td style="color:var(--text-secondary);">${formatDate(c.created_at)}</td>
+                            <td class="actions">
+                                <button class="btn btn-sm" onclick="editDiscordId('${c.id}', '${c.discord_id || ""}')">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                                <button class="btn btn-sm ${isActive ? 'btn-danger' : 'btn-success'}" onclick="toggleCustomer('${c.id}', ${isActive})">
+                                    ${isActive ? 'Pausa' : 'Aktivera'}
+                                </button>
+                                <button class="btn btn-sm btn-danger-outline" onclick="deleteCustomer('${c.id}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join("");
+                document.getElementById("customerTable").innerHTML = rows || '<tr><td colspan="4" class="empty">Inga kunder ännu</td></tr>';
+            } catch (e) { console.error(e); }
+        }
+
+        async function toggleCustomer(id, current) {
+            try {
+                await authFetch(API_BASE + "/admin/toggle-customer", { method: "POST", headers: authHeaders(), body: JSON.stringify({ id, active: !current }) });
+                loadCustomers();
+            } catch (e) { console.error(e); }
+        }
+
+        async function deleteCustomer(id) {
+            const ok = await customConfirm("Är du säker på att du vill ta bort kunden? Licensen blir oanvänd.", {
+                title: "Ta bort kund",
+                okText: "Ta bort",
+                danger: true,
+            });
+            if (!ok) return;
+            try {
+                await authFetch(API_BASE + "/admin/delete-customer/" + id, { method: "DELETE", headers: authHeaders() });
+                loadCustomers();
+                loadStats();
+            } catch (e) { console.error(e); }
+        }
+
+        async function editDiscordId(id, current) {
+            const newId = await customPrompt("Ange nytt Discord-ID för kunden:", current, {
+                title: "Byt Discord-ID",
+                okText: "Spara",
+            });
+            if (!newId || newId === current) return;
+            try {
+                const res = await authFetch(API_BASE + "/admin/update-customer-discord", { method: "POST", headers: authHeaders(), body: JSON.stringify({ id, discord_id: newId.trim() }) });
+                const json = await safeJson(res);
+                if (json?.success) loadCustomers();
+                else await customAlert("Misslyckades: " + (json?.error || "okänt fel"), { iconClass: "fas fa-circle-xmark", iconType: "danger" });
+            } catch (e) { console.error(e); }
+        }
+
+        document.getElementById("createCustomer").onclick = async () => {
+            const discord_id = document.getElementById("cu").value.trim();
+            const license_key = document.getElementById("ck").value.trim();
+            const msgEl = document.getElementById("custMsg");
+            if (!discord_id || !license_key) { msgEl.innerText = "Fyll i Discord-ID och licensnyckel"; return; }
+            try {
+                const res = await authFetch(API_BASE + "/admin/create-customer", { method: "POST", headers: authHeaders(), body: JSON.stringify({ discord_id, license_key }) });
+                const json = await safeJson(res);
+                if (!json?.success) { msgEl.innerText = "Kunde inte skapa kund: " + (json?.error || "okänt fel"); return; }
+                msgEl.innerText = "Kund skapad";
+                loadCustomers();
+                loadStats();
+                document.getElementById("cu").value = "";
+                document.getElementById("ck").value = "";
+            } catch (e) { console.error(e); }
+        };
+
+        document.getElementById("createLicense").onclick = async () => {
+            const duration = document.getElementById("licenseDuration").value;
+            const msgEl = document.getElementById("licMsg");
+            try {
+                const res = await authFetch(API_BASE + "/admin/create-license", { method: "POST", headers: authHeaders(), body: JSON.stringify({ duration }) });
+                const json = await safeJson(res);
+                if (json?.success && json?.license_key) {
+                    document.getElementById("newLicense").value = json.license_key;
+                    msgEl.innerText = "Licens skapad — kopiera nyckeln ovan";
+                    loadLicenses();
+                    loadStats();
+                } else {
+                    msgEl.innerText = "Misslyckades att skapa licens";
+                }
+            } catch (e) {
+                msgEl.innerText = "Fel vid anrop";
+                console.error(e);
+            }
+        };
+
+        /* ===== STATS ===== */
+        async function loadStats() {
+            try {
+                const res = await authFetch(API_BASE + '/admin/stats', { headers: authHeaders() });
+                const json = await safeJson(res);
+                if (!json || !json.success) return;
+                const s = json.stats;
+                document.getElementById('statLicenses').innerText = s.totalLicenses;
+                document.getElementById('statActiveLicenses').innerText = s.activeLicenses + ' aktiva';
+                document.getElementById('statCustomers').innerText = s.totalCustomers;
+                document.getElementById('statActiveCustomers').innerText = s.activeCustomers + ' aktiva';
+                document.getElementById('statBans').innerText = s.activeBans;
+                document.getElementById('statTotalBans').innerText = s.totalBans + ' totalt';
+            } catch(e) { console.error(e); }
+        }
+
+        /* ===== BANS ===== */
+        let allBansData = [];
+        let bansFilter = 'all';
+
+        async function loadBans() {
+            try {
+                const res = await authFetch(API_BASE + '/admin/bans', { headers: authHeaders() });
+                const json = await safeJson(res);
+                if (!res.ok || !json?.success) return;
+                allBansData = json.data || [];
+                renderBans();
+            } catch(e) { console.error(e); }
+        }
+
+        function renderBans() {
+            const rows = allBansData
+                .filter(b => {
+                    if (bansFilter === 'active') return b.active === true;
+                    if (bansFilter === 'inactive') return b.active === false;
+                    return true;
+                })
+                .map(b => {
+                    const isActive = b.active === true;
+                    const shortId = (b.ban_id || '').slice(-8);
+                    const reason = (b.reason || '-').length > 60 ? (b.reason || '-').slice(0, 60) + '...' : (b.reason || '-');
+                    return `<tr>
+                        <td>
+                            <div style="font-weight:500;">${b.player_name || 'Unknown'}</div>
+                            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;font-family:'JetBrains Mono',monospace;">#${shortId}</div>
+                        </td>
+                        <td style="max-width:240px;" title="${(b.reason || '').replace(/"/g, '&quot;')}">${reason}</td>
+                        <td style="color:var(--text-secondary);">${b.banned_by || '-'}</td>
+                        <td>${statusPill(isActive ? 'ACTIVE' : 'INACTIVE')}</td>
+                        <td style="color:var(--text-secondary);font-size:12.5px;">${formatDate(b.created_at)}</td>
+                        <td class="actions">
+                            ${isActive
+                                ? `<button class="btn btn-sm btn-success" onclick="adminUnban('${b.ban_id}')"><i class="fas fa-unlock"></i> Unban</button>`
+                                : '<span style="color:var(--text-muted);font-size:12px;">—</span>'}
+                        </td>
+                    </tr>`;
+                }).join('');
+            document.getElementById('bansTable').innerHTML = rows || '<tr><td colspan="6" class="empty">Inga bans</td></tr>';
+        }
+
+        async function adminUnban(ban_id) {
+            const ok = await customConfirm(`Vill du unbanna ${ban_id}? Spelaren kan ansluta igen direkt.`, {
+                title: "Unbanna spelare",
+                okText: "Unbanna",
+            });
+            if (!ok) return;
+            try {
+                await authFetch(API_BASE + '/admin/unban', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ ban_id }) });
+                loadBans();
+                loadStats();
+            } catch(e) { console.error(e); }
+        }
+
+        document.getElementById('filterAllBans').onclick = () => {
+            bansFilter = 'all';
+            updateFilterButtons('filterAllBans');
+            renderBans();
+        };
+        document.getElementById('filterActiveBans').onclick = () => {
+            bansFilter = 'active';
+            updateFilterButtons('filterActiveBans');
+            renderBans();
+        };
+        document.getElementById('filterInactiveBans').onclick = () => {
+            bansFilter = 'inactive';
+            updateFilterButtons('filterInactiveBans');
+            renderBans();
+        };
+        function updateFilterButtons(activeId) {
+            ['filterAllBans', 'filterActiveBans', 'filterInactiveBans'].forEach(id => {
+                document.getElementById(id).classList.remove('btn-blue');
+            });
+            document.getElementById(activeId).classList.add('btn-blue');
+        }
+
+        /* ===== SERVERS ===== */
+        async function loadServers() {
+            try {
+                const res = await authFetch(API_BASE + '/admin/servers', { headers: authHeaders() });
+                const json = await safeJson(res);
+                if (!res.ok || !json?.success) return;
+                const rows = (json.data || []).map(s => {
+                    const online = s.online === true;
+                    return `<tr>
+                        <td>
+                            <div style="font-weight:500;">${s.server_name || s.license_key || 'Server'}</div>
+                            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;font-family:'JetBrains Mono',monospace;">${s.plan || '-'} · ${s.license_key || ''}</div>
+                        </td>
+                        <td>${statusPill(online ? 'ACTIVE' : 'OFFLINE')}</td>
+                        <td><span style="font-weight:500;">${s.player_count ?? '-'}</span><span style="color:var(--text-muted);"> / ${s.max_players ?? '-'}</span></td>
+                        <td class="mono">${s.version || '-'}</td>
+                        <td>${s.active_bans ?? '-'}</td>
+                        <td>${s.detections_24h ?? '-'}</td>
+                        <td style="color:var(--text-secondary);font-size:12.5px;">${formatDate(s.server_last_seen || s.license_last_seen)}</td>
+                    </tr>`;
+                }).join('');
+                document.getElementById('serversTable').innerHTML = rows || '<tr><td colspan="7" class="empty">Inga servrar anslutna</td></tr>';
+            } catch(e) { console.error(e); }
+        }
+
+        /* ===== NAVIGATION ===== */
+        const VIEW_META = {
+            dashboard: { title: "Dashboard", crumb: "Översikt" },
+            licenses: { title: "Licenser", crumb: "Hantering / Licenser" },
+            customers: { title: "Kunder", crumb: "Hantering / Kunder" },
+            bans: { title: "Bans", crumb: "Övervakning / Bans" },
+            servers: { title: "Servrar", crumb: "Övervakning / Servrar" },
+        };
+
+        document.querySelectorAll(".nav-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+                const view = btn.dataset.view;
+                document.getElementById(view).classList.add("active");
+                const meta = VIEW_META[view] || {};
+                document.getElementById("topbarTitle").innerText = meta.title || view;
+                document.getElementById("topbarCrumb").innerText = meta.crumb || "GhostGuard";
+                if (view === "licenses") loadLicenses();
+                if (view === "customers") loadCustomers();
+                if (view === "bans") loadBans();
+                if (view === "servers") loadServers();
+                if (view === "dashboard") loadStats();
+            });
+        });
+
+        /* ===== INIT ===== */
+        document.getElementById("refresh").onclick = () => {
+            loadStats();
+            loadLicenses();
+            loadCustomers();
+            loadBans();
+            loadServers();
+        };
+
+        (async () => {
+            const user = await checkAuth();
+            if (!user) return;
+            renderUser(user);
+            loadStats();
+            loadLicenses();
+            loadCustomers();
+        })();
+
+        /* expose for inline onclicks */
+        window.adminUnban = adminUnban;
+        window.toggleCustomer = toggleCustomer;
+        window.deleteCustomer = deleteCustomer;
+        window.editDiscordId = editDiscordId;
+        window.toggleLicense = toggleLicense;
+        window.deleteLicense = deleteLicense;
+    </script>
+</body>
+</html>
