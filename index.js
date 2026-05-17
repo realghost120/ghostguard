@@ -285,7 +285,8 @@ app.get("/auth/discord/callback", async (req, res) => {
     const user = await userRes.json();
     if (!user.id) return res.status(401).send("Could not fetch Discord user");
 
-    if (ADMIN_DISCORD_IDS.includes(user.id)) {
+    const isAdmin = ADMIN_DISCORD_IDS.includes(user.id);
+    if (isAdmin) {
       const payload = {
         kind: "admin",
         discord_id: user.id,
@@ -295,6 +296,25 @@ app.get("/auth/discord/callback", async (req, res) => {
         exp: Date.now() + SESSION_MAX_AGE_MS,
       };
       setCookie(res, "gg_admin", signSession(payload));
+
+      const adminAsCustomer = await qOne("SELECT * FROM customers WHERE discord_id = $1", [user.id]);
+      if (adminAsCustomer && adminAsCustomer.active) {
+        await q(
+          "UPDATE customers SET last_login = now(), discord_name = $1, discord_avatar = $2 WHERE id = $3",
+          [user.username, user.avatar, adminAsCustomer.id]
+        );
+        const cust = {
+          kind: "customer",
+          customer_id: adminAsCustomer.id,
+          discord_id: user.id,
+          username: user.username,
+          avatar: user.avatar,
+          license_key: adminAsCustomer.license_key,
+          iat: Date.now(),
+          exp: Date.now() + SESSION_MAX_AGE_MS,
+        };
+        setCookie(res, "gg_customer", signSession(cust));
+      }
       return res.redirect("/panel");
     }
 
