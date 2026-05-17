@@ -1,10 +1,11 @@
 Config = {}
 
--- 🔐 LICENS
-Config.LicenseKey = "GG-A672-F851"
+-- Backend (rör inte)
 Config.BackendURL = "https://panel.ghostguardac.se"
 
--- ⚙️ ANTICHEAT SETTINGS
+-- License key ligger i license.cfg (säkrare). Rör inte konfigurationen nedan.
+
+-- ANTICHEAT SETTINGS
 Config.MaxHealth = 200
 Config.MaxArmor = 100
 Config.FlyHeightLimit = 5.0

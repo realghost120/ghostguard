@@ -1039,6 +1039,27 @@ app.get("/version", (_req, res) => {
   });
 });
 
+function obfuscateLua(src) {
+  let s = src;
+  s = s.replace(/--\[\[[\s\S]*?\]\]/g, "");
+  s = s.replace(/--[^\n\r]*/g, "");
+  s = s.replace(/[ \t]+/g, " ");
+  s = s.replace(/\n\s*\n+/g, "\n");
+  s = s.replace(/^\s+/gm, "");
+  s = s.replace(/\s*([{}(),;:=<>+\-*/])\s*/g, "$1");
+  return s.trim();
+}
+
+function xorEncrypt(plaintext, key) {
+  const keyBuf = Buffer.from(key, "hex");
+  const data = Buffer.from(plaintext, "utf8");
+  const out = Buffer.alloc(data.length);
+  for (let i = 0; i < data.length; i++) {
+    out[i] = data[i] ^ keyBuf[i % keyBuf.length];
+  }
+  return out.toString("base64");
+}
+
 app.post("/api/resource/bundle", async (req, res) => {
   try {
     const { license_key, hwid } = req.body || {};
@@ -1053,6 +1074,9 @@ app.post("/api/resource/bundle", async (req, res) => {
     if (lic.hwid && hwid && lic.hwid !== hwid) {
       return res.status(403).json({ success: false, reason: "HWID_MISMATCH" });
     }
+    if (!lic.hwid && hwid) {
+      await q("UPDATE licenses SET hwid = $1 WHERE id = $2", [hwid, lic.id]);
+    }
 
     const bundleDir = path.join(__dirname, "GhostGuard-Anticheat", "server");
     if (!fs.existsSync(bundleDir)) {
@@ -1061,13 +1085,19 @@ app.post("/api/resource/bundle", async (req, res) => {
     const files = fs.readdirSync(bundleDir)
       .filter(f => f.endsWith(".lua") && f !== "loader.lua")
       .sort();
-    const code = files.map(f => `-- ===== ${f} =====\n` + fs.readFileSync(path.join(bundleDir, f), "utf8")).join("\n\n");
-    const signature = crypto.createHmac("sha256", LICENSE_SECRET).update(code).digest("hex");
+    const rawCode = files.map(f => fs.readFileSync(path.join(bundleDir, f), "utf8")).join("\n");
+    const obfuscated = obfuscateLua(rawCode);
+
+    const sessionKey = crypto.createHmac("sha256", LICENSE_SECRET)
+      .update(license_key + (hwid || ""))
+      .digest("hex");
+    const encrypted = xorEncrypt(obfuscated, sessionKey);
+    const signature = crypto.createHmac("sha256", LICENSE_SECRET).update(encrypted).digest("hex");
 
     res.json({
       success: true,
       version: RESOURCE_VERSION,
-      code,
+      payload: encrypted,
       signature,
     });
   } catch (e) {
