@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>GhostGuard – FAQ</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+
+    /* ===== RESET & BASE (identiskt med originalsidan) ===== */
+
+    * {
+
+      margin: 0;
+
+      padding: 0;
+
+      box-sizing: border-box;
+
+      font-family: 'Inter', sans-serif;
+
+    }
+
+
+
+    body {
+
+      background: radial-gradient(circle at top, #0c2448, #020617 70%);
+
+      color: white;
+
+      min-height: 100vh;
+
+      overflow-x: hidden;
+
+    }
+
+
+
+    /* grid background */
+
+    body::before {
+
+      content: "";
+
+      position: fixed;
+
+      width: 100%;
+
+      height: 100%;
+
+      background-image:
+
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+
+      background-size: 60px 60px;
+
+      z-index: -1;
+
+      pointer-events: none;
+
+    }
+
+
+
+    /* ===== NAVBAR (exakt kopia) ===== */
+
+    nav {
+
+      display: flex;
+
+      justify-content: space-between;
+
+      align-items: center;
+
+      padding: 30px 80px;
+
+    }
+
+
+
+    .nav-left {
+
+      display: flex;
+
+      gap: 30px;
+
+      color: #cbd5f5;
+
+      font-size: 15px;
+
+    }
+
+
+
+    .nav-left a {
+
+      text-decoration: none;
+
+      color: #cbd5f5;
+
+      transition: color 0.2s ease;
+
+    }
+
+
+
+    .nav-left a:hover {
+
+      color: white;
+
+    }
+
+
+
+    .nav-right {
+
+      display: flex;
+
+      gap: 15px;
+
+    }
+
+
+
+    .btn {
+
+      padding: 10px 20px;
+
+      border-radius: 8px;
+
+      border: 1px solid rgba(255,255,255,0.2);
+
+      background: transparent;
+
+      color: white;
+
+      cursor: pointer;
+
+      font-weight: 500;
+
+      transition: all 0.2s ease;
+
+    }
+
+
+
+    .btn-primary {
+
+      background: #1d4ed8;
+
+      border: none;
+
+    }
+
+
+
+    .btn-primary:hover {
+
+      background: #256ef0;
+
+    }
+
+
+
+    .btn:hover {
+
+      background: rgba(255,255,255,0.05);
+
+    }
+
+
+
+    /* ===== FAQ HERO / HEADER (mindre variant, men passar) ===== */
+
+    .faq-hero {
+
+      padding: 80px 80px 40px 80px;
+
+      max-width: 1000px;
+
+      margin: 0 auto;
+
+      text-align: center;
+
+    }
+
+
+
+    .faq-hero h1 {
+
+      font-size: 48px;
+
+      font-weight: 700;
+
+      color: #d6e4ff;
+
+      margin-bottom: 16px;
+
+    }
+
+
+
+    .faq-hero p {
+
+      color: #9fb3d9;
+
+      font-size: 18px;
+
+      max-width: 600px;
+
+      margin: 0 auto;
+
+      line-height: 1.5;
+
+    }
+
+
+
+    /* ===== FAQ GRID / ACCORDION (ren, mörk theme) ===== */
+
+    .faq-section {
+
+      padding: 20px 80px 60px 80px;
+
+      max-width: 1100px;
+
+      margin: 0 auto;
+
+    }
+
+
+
+    .faq-grid {
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 20px;
+
+    }
+
+
+
+    .faq-item {
+
+      background: rgba(2, 6, 23, 0.7);
+
+      backdrop-filter: blur(6px);
+
+      border: 1px solid rgba(255, 255, 255, 0.04);
+
+      border-radius: 24px;
+
+      padding: 0 28px;  /* padding top/bottom via .faq-question */
+
+      transition: border-color 0.2s;
+
+      box-shadow: 0 12px 30px -10px rgba(0,0,0,0.6);
+
+    }
+
+
+
+    .faq-item:hover {
+
+      border-color: rgba(59, 130, 246, 0.3);
+
+    }
+
+
+
+    .faq-question {
+
+      display: flex;
+
+      justify-content: space-between;
+
+      align-items: center;
+
+      padding: 24px 0;
+
+      cursor: pointer;
+
+      user-select: none;
+
+    }
+
+
+
+    .faq-question h3 {
+
+      font-size: 18px;
+
+      font-weight: 500;
+
+      color: #e0edff;
+
+    }
+
+
+
+    .faq-icon {
+
+      font-size: 24px;
+
+      color: #7f96c0;
+
+      transition: transform 0.2s;
+
+    }
+
+
+
+    .faq-answer {
+
+      max-height: 0;
+
+      overflow: hidden;
+
+      transition: max-height 0.3s ease, padding 0.2s;
+
+      border-top: 1px solid transparent;
+
+    }
+
+
+
+    .faq-item.expanded .faq-answer {
+
+      max-height: 200px;   /* tillräckligt för svar */
+
+      padding-bottom: 24px;
+
+      border-top-color: rgba(255,255,255,0.05);
+
+    }
+
+
+
+    .faq-item.expanded .faq-icon {
+
+      transform: rotate(45deg);
+
+    }
+
+
+
+    .faq-answer p {
+
+      color: #9aaecf;
+
+      font-size: 16px;
+
+      line-height: 1.6;
+
+      margin-top: 16px;
+
+    }
+
+
+
+    /* liten extra highlight för känsliga ord */
+
+    .faq-answer strong {
+
+      color: #bcd6ff;
+
+      font-weight: 600;
+
+    }
+
+
+
+    /* ===== "COULDN'T FIND ANSWER?" – box (exakt samma stil som support-card) ===== */
+
+    .discord-support-section {
+
+      padding: 20px 80px 80px 80px;
+
+      max-width: 1200px;
+
+      margin: 0 auto;
+
+    }
+
+
+
+    .discord-card {
+
+      background: rgba(2, 6, 23, 0.75);
+
+      backdrop-filter: blur(8px);
+
+      border: 1px solid rgba(255, 255, 255, 0.05);
+
+      border-radius: 28px;
+
+      padding: 36px 48px;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: space-between;
+
+      flex-wrap: wrap;
+
+      gap: 30px;
+
+      box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
+
+    }
+
+
+
+    .discord-text h3 {
+
+      font-size: 24px;
+
+      font-weight: 600;
+
+      color: #d6e4ff;
+
+      margin-bottom: 8px;
+
+    }
+
+
+
+    .discord-text p {
+
+      color: #9fb3d9;
+
+      font-size: 16px;
+
+      max-width: 500px;
+
+      line-height: 1.5;
+
+    }
+
+
+
+    .discord-btn {
+
+      background: transparent;
+
+      border: 1px solid rgba(255,255,255,0.15);
+
+      border-radius: 40px;
+
+      padding: 12px 32px;
+
+      color: white;
+
+      font-weight: 500;
+
+      font-size: 16px;
+
+      cursor: pointer;
+
+      display: flex;
+
+      align-items: center;
+
+      gap: 10px;
+
+      transition: all 0.2s ease;
+
+      backdrop-filter: blur(4px);
+
+    }
+
+
+
+    .discord-btn:hover {
+
+      background: rgba(29, 78, 216, 0.2);
+
+      border-color: rgba(255,255,255,0.3);
+
+    }
+
+
+
+    .discord-btn span {
+
+      font-size: 20px;
+
+    }
+
+
+
+    /* ===== FEATURES-SEKTION (exakt samma footer/extra-stats som originalsidan) ===== */
+
+    .features-section {
+
+      padding: 20px 80px 100px 80px;
+
+      max-width: 1400px;
+
+      margin: 0 auto;
+
+    }
+
+
+
+    .section-header {
+
+      text-align: center;
+
+      margin-bottom: 70px;
+
+    }
+
+
+
+    .section-header h2 {
+
+      font-size: 40px;
+
+      font-weight: 600;
+
+      color: #d6e4ff;
+
+      letter-spacing: -0.02em;
+
+      margin-bottom: 18px;
+
+    }
+
+
+
+    .section-header p {
+
+      color: #9fb3d9;
+
+      font-size: 18px;
+
+      max-width: 620px;
+
+      margin: 0 auto;
+
+      line-height: 1.6;
+
+    }
+
+
+
+    .feature-grid {
+
+      display: grid;
+
+      grid-template-columns: repeat(3, 1fr);
+
+      gap: 30px;
+
+    }
+
+
+
+    .feature-card {
+
+      background: rgba(2, 6, 23, 0.7);
+
+      backdrop-filter: blur(6px);
+
+      border: 1px solid rgba(255,255,255,0.04);
+
+      border-radius: 24px;
+
+      padding: 32px 28px;
+
+      transition: transform 0.2s ease, border-color 0.2s;
+
+      box-shadow: 0 12px 30px -10px rgba(0,0,0,0.6);
+
+    }
+
+
+
+    .feature-card:hover {
+
+      border-color: rgba(59, 130, 246, 0.3);
+
+      transform: translateY(-3px);
+
+    }
+
+
+
+    .card-icon {
+
+      font-size: 36px;
+
+      margin-bottom: 24px;
+
+      background: rgba(29, 78, 216, 0.15);
+
+      width: 64px;
+
+      height: 64px;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      border-radius: 18px;
+
+      border: 1px solid rgba(255,255,255,0.05);
+
+    }
+
+
+
+    .feature-card h3 {
+
+      font-size: 22px;
+
+      font-weight: 600;
+
+      color: #e0edff;
+
+      margin-bottom: 14px;
+
+    }
+
+
+
+    .feature-card p {
+
+      color: #9aaecf;
+
+      font-size: 16px;
+
+      line-height: 1.6;
+
+    }
+
+
+
+    .mini-stat-row {
+
+      display: flex;
+
+      margin-top: 26px;
+
+      gap: 20px;
+
+      border-top: 1px solid rgba(255,255,255,0.05);
+
+      padding-top: 22px;
+
+    }
+
+
+
+    .mini-stat-item {
+
+      flex: 1;
+
+    }
+
+
+
+    .mini-stat-item .label {
+
+      font-size: 13px;
+
+      color: #7f96c0;
+
+    }
+
+
+
+    .mini-stat-item .value {
+
+      font-size: 20px;
+
+      font-weight: 600;
+
+      color: #bcd6ff;
+
+    }
+
+
+
+    .extra-stats {
+
+      display: flex;
+
+      justify-content: center;
+
+      gap: 60px;
+
+      margin-top: 70px;
+
+      background: rgba(0,0,0,0.2);
+
+      padding: 30px 40px;
+
+      border-radius: 80px;
+
+      border: 1px solid rgba(255,255,255,0.02);
+
+      backdrop-filter: blur(4px);
+
+      flex-wrap: wrap;
+
+    }
+
+
+
+    .extra-stat-item {
+
+      text-align: center;
+
+    }
+
+
+
+    .extra-stat-item .big-number {
+
+      font-size: 28px;
+
+      font-weight: 700;
+
+      color: #bcd6ff;
+
+    }
+
+
+
+    .extra-stat-item .label {
+
+      color: #7b94c2;
+
+    }
+
+
+
+    .footer-note {
+
+      text-align: center;
+
+      margin-top: 80px;
+
+      color: #536b99;
+
+      font-size: 14px;
+
+      border-top: 1px solid rgba(255,255,255,0.03);
+
+      padding-top: 40px;
+
+    }
+
+
+
+    /* ===== RESPONSIVE (samma brytpunkter) ===== */
+
+    @media (max-width: 1200px) {
+
+      nav, .faq-hero, .faq-section, .discord-support-section, .features-section {
+
+        padding-left: 40px;
+
+        padding-right: 40px;
+
+      }
+
+      .feature-grid { gap: 20px; }
+
+    }
+
+
+
+    @media (max-width: 1000px) {
+
+      .feature-grid { grid-template-columns: repeat(2, 1fr); }
+
+      .discord-card {
+
+        flex-direction: column;
+
+        text-align: center;
+
+      }
+
+    }
+
+
+
+    @media (max-width: 650px) {
+
+      .feature-grid { grid-template-columns: 1fr; }
+
+      .nav-left { gap: 15px; font-size: 13px; }
+
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+
+
+  <!-- NAVBAR (exakt kopia) -->
+
+  <nav>
+
+    <div class="nav-left">
+
+      <a href="/">Home</a>
+
+      <a href="/about-us/">About us</a>
+
+      <a href="/pricing/">Pricing</a>
+
+      <a href="/faq/">FAQ</a>
+
+    </div>
+
+    <div class="nav-right">
+
+      <button class="btn">Sign in</button>
+
+    </div>
+
+  </nav>
+
+
+
+  <!-- FAQ HERO (mjuk intro) -->
+
+  <section class="faq-hero">
+
+    <h1>Frequently asked questions</h1>
+
+    <p>Everything you need to know about GhostGuard – from installation to bans & licensing.</p>
+
+  </section>
+
+
+
+  <!-- FAQ ACCORDION (interaktiv med ren JS) -->
+
+  <section class="faq-section">
+
+    <div class="faq-grid" id="faqGrid">
+
+      <!-- fråga 1 -->
+
+      <div class="faq-item expanded" onclick="toggleFaq(this)">  <!-- expanded som default på första, synlig -->
+
+        <div class="faq-question">
+
+          <h3>How does GhostGuard detect cheaters?</h3>
+
+          <span class="faq-icon">+</span>
+
+        </div>
+
+        <div class="faq-answer">
+
+          <p>GhostGuard uses a hybrid detection engine: signature-based scanning for known cheat clients, and heuristic analysis for behavioral flags like speed-hack, godmode, noclip, and injection. All detections happen in real-time with <strong>zero additional lag</strong>.</p>
+
+        </div>
+
+      </div>
+
+      <!-- fråga 2 -->
+
+      <div class="faq-item" onclick="toggleFaq(this)">
+
+        <div class="faq-question">
+
+          <h3>Will it impact my server performance?</h3>
+
+          <span class="faq-icon">+</span>
+
+        </div>
+
+        <div class="faq-answer">
+
+          <p>No. GhostGuard is written in highly optimized C++ and Lua, and runs asynchronously. Most servers see <strong>0–2% CPU usage increase</strong>. We prioritize minimal overhead while keeping security tight.</p>
+
+        </div>
+
+      </div>
+
+      <!-- fråga 3 -->
+
+      <div class="faq-item" onclick="toggleFaq(this)">
+
+        <div class="faq-question">
+
+          <h3>How do I install GhostGuard on my FiveM server?</h3>
+
+          <span class="faq-icon">+</span>
+
+        </div>
+
+        <div class="faq-answer">
+
+          <p>After purchase, you'll receive a script key and a download link. Simply drag the folder into your <code>resources</code> directory, add <code>ensure ghostguard</code> to your server.cfg, and authenticate with your license via the console. Full step-by-step guide is inside the package.</p>
+
+        </div>
+
+      </div>
+
+      <!-- fråga 4 -->
+
+      <div class="faq-item" onclick="toggleFaq(this)">
+
+        <div class="faq-question">
+
+          <h3>Can I ban players manually or only automatic?</h3>
+
+          <span class="faq-icon">+</span>
+
+        </div>
+
+        <div class="faq-answer">
+
+          <p>Both. Automatic bans are logged and can be customized (instant ban, kick, or just warning). You also have a web dashboard to ban players manually, manage exemptions, and review evidence logs.</p>
+
+        </div>
+
+      </div>
+
+      <!-- fråga 5 -->
+
+      <div class="faq-item" onclick="toggleFaq(this)">
+
+        <div class="faq-question">
+
+          <h3>What is the pricing model? One-time or subscription?</h3>
+
+          <span class="faq-icon">+</span>
+
+        </div>
+
+        <div class="faq-answer">
+
+          <p>We offer both monthly and yearly subscriptions, with discounts for long-term commitments. Every subscription includes free updates and access to the threat feed. Check our <a href="/pricing/" style="color:#6ea4ff;">Pricing page</a> for current plans.</p>
+
+        </div>
+
+      </div>
+
+      <!-- fråga 6 -->
+
+      <div class="faq-item" onclick="toggleFaq(this)">
+
+        <div class="faq-question">
+
+          <h3>Does it work with other anticheats or server resources?</h3>
+
+          <span class="faq-icon">+</span>
+
+        </div>
+
+        <div class="faq-answer">
+
+          <p>Yes, GhostGuard is designed to be fully compatible with most popular frameworks (ESX, QBCore, Standalone). It avoids interfering with other resources and includes an extensive whitelist system to prevent false positives with legitimate admin tools.</p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+
+  <!-- DISCORD BOX – "Couldn't find the answer? Join our Discord!" (exakt stil som support-card) -->
+
+  <section class="discord-support-section">
+
+    <div class="discord-card">
+
+      <div class="discord-text">
+
+        <h3><i class="fa-solid fa-magnifying-glass"></i> Couldn't find the answer to your question?</h3>
+
+        <p>Our team and community are live on Discord. Get instant help, ask about custom setups, or just hang out.</p>
+
+         </div>
+
+    <a href="https://discord.gg/dnfnwuTKMa" target="_blank" rel="noopener noreferrer" class="discord-btn" style="text-decoration: none;">
+
+      <span><i class="fa-brands fa-discord"></i></span> Join our Discord
+
+    </a>
+
+  </div>
+
+
+
+  </section>
+
+
+
+  <!-- FEATURES-SEKTION (identisk footer med samma statistik som originalsidan) -->
+
+  <section class="features-section">
+
+    <div class="section-header"> 
+
+      <h2>Engineered for FiveM security</h2>
+
+      <p>Real‑time protection, zero performance impact, and instant block of thousands of cheat vectors.</p>
+
+    </div>
+
+
+
+    <div class="feature-grid">
+
+      <div class="feature-card">
+
+        <div class="card-icon"><i class="fa-solid fa-shield-halved"></i></div>
+
+        <h3>Advanced Detection</h3>
+
+        <p>Realtidsdetektion av godmode, noclip, speedhack, injection och manipulation av resources.</p>
+
+        <div class="mini-stat-row">
+
+          <div class="mini-stat-item"><span class="label"></span><span class="value"></span></div>
+
+          <div class="mini-stat-item"><span class="label"></span><span class="value"></span></div>
+
+        </div>
+
+      </div>
+
+      <div class="feature-card">
+
+        <div class="card-icon"><i class="fa-solid fa-gear"></i></div>
+
+        <h3>Secure Event System</h3>
+
+        <p>Safe-event validering som blockerar exploiter och otillåtna server events.</p>
+
+        <div class="mini-stat-row">
+
+          <div class="mini-stat-item"><span class="label"></span><span class="value"></span></div>
+
+          <div class="mini-stat-item"><span class="label"></span><span class="value"></span></div>
+
+        </div>
+
+      </div>
+
+      <div class="feature-card">
+
+        <div class="card-icon"><i class="fa-solid fa-chart-line"></i></div>
+
+        <h3>Web Dashboard</h3>
+
+        <p>Hantera licenser, bans och loggar via vår säkra webbpanel utan att dela server-access.</p>
+
+        <div class="mini-stat-row">
+
+          <div class="mini-stat-item"><span class="label"></span><span class="value"></span></div>
+
+          <div class="mini-stat-item"><span class="label"></span><span class="value"></span></div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+
+    <div class="extra-stats">
+
+      <div class="extra-stat-item"><span class="big-number">24/7</span><br><span class="label">threat feed</span></div>
+
+      <div class="extra-stat-item"><span class="big-number">10+</span><br><span class="label">Servers</span></div>
+
+      <div class="extra-stat-item"><span class="big-number">99.98%</span><br><span class="label">uptime</span></div>
+
+    </div>
+
+
+
+    <div class="footer-note">
+
+      GhostGuard Anticheat � Made by wille9799 � Hosted with Labbet.se
+
+    </div>
+
+  </section>
+
+
+
+  <!-- Enkel JavaScript för FAQ toggle (exakt samma interaktion som ett accordion) -->
+
+  <script>
+
+    function toggleFaq(element) {
+
+      // element är .faq-item som klickats
+
+      element.classList.toggle('expanded');
+
+
+
+      // uppdatera ikon från + till × (men vi använder samma ikon, roteras med CSS, men vi kan byta text om vi vill)
+
+      const icon = element.querySelector('.faq-icon');
+
+      if (element.classList.contains('expanded')) {
+
+        icon.textContent = '×';  // multiplikationstecken som 'stängt' känsla
+
+      } else {
+
+        icon.textContent = '+';
+
+      }
+
+    }
+
+
+
+    // säkerställ att första frågan har rätt ikon vid sidladdning (expanded redan satt i html)
+
+    window.addEventListener('DOMContentLoaded', () => {
+
+      const firstItem = document.querySelector('.faq-item.expanded');
+
+      if (firstItem) {
+
+        const icon = firstItem.querySelector('.faq-icon');
+
+        if (icon) icon.textContent = '×';
+
+      }
+
+      // resten har + som standard
+
+      document.querySelectorAll('.faq-item:not(.expanded) .faq-icon').forEach(icon => icon.textContent = '+');
+
+    });
+
+
+
+    // För att hantera klick på hela .faq-item, men undvika bubblande om man klickar på länk i svar
+
+    // (redan hanterat, men vi kan stoppa propagation från länkar om det behövs)
+
+    document.querySelectorAll('.faq-answer a').forEach(link => {
+
+      link.addEventListener('click', (e) => e.stopPropagation());
+
+      
+
+         // Gör så att vanliga knappar (Sign in / Sign up) länkar till Discord (för demo)
+
+        document.querySelectorAll('.btn:not(.btn-primary)').forEach(btn => {
+
+            btn.addEventListener('click', () => window.location.href = '/');
+
+        });
+
+        document.querySelector('.btn-primary').addEventListener('click', () => window.location.href = '/');
+
+    });
+
+  </script>
+
+
+
+</body>
+
+</html>

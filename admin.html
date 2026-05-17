@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <title>GhostGuard Admin</title>
+    <style>
+        /* ===== RESET & BASE (GhostGuard-tema) ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: radial-gradient(circle at top, #0c2448, #020617 70%);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* grid background (identiskt med webbplatsen) */
+        body::before {
+            content: "";
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* ===== HEADER (GhostGuard-stil) ===== */
+        header {
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            background: rgba(2, 6, 23, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            font-weight: 600;
+            font-size: 16px;
+            color: #bcd6ff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand i {
+            color: #1d4ed8;
+            font-size: 20px;
+        }
+
+        /* ===== LAYOUT ===== */
+        .layout {
+            display: flex;
+            min-height: calc(100vh - 70px);
+        }
+
+        /* ===== SIDEBAR (GhostGuard-stil) ===== */
+        .sidebar {
+            width: 240px;
+            background: rgba(2, 6, 23, 0.7);
+            backdrop-filter: blur(8px);
+            border-right: 1px solid rgba(255,255,255,0.05);
+            padding: 25px 16px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo {
+            font-weight: 700;
+            font-size: 18px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            color: #d6e4ff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo i {
+            color: #1d4ed8;
+            font-size: 22px;
+        }
+
+        /* Navigation (GhostGuard-stil) */
+        .nav-btn {
+            background: none;
+            border: 1px solid transparent;
+            color: #9fb3d9;
+            padding: 12px 14px;
+            text-align: left;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-btn i {
+            width: 20px;
+            font-size: 16px;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.1);
+            color: white;
+        }
+
+        .nav-btn.active {
+            background: #1d4ed8;
+            color: white;
+            border-color: rgba(255,255,255,0.2);
+            box-shadow: 0 5px 15px rgba(29, 78, 216, 0.3);
+        }
+
+        /* ===== CONTENT ===== */
+        .content {
+            flex: 1;
+            padding: 30px;
+        }
+
+        /* Views */
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        /* ===== CARDS (GhostGuard glassmorphism) ===== */
+        .card {
+            background: rgba(2, 6, 23, 0.7);
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 24px;
+            padding: 28px;
+            margin-bottom: 30px;
+            box-shadow: 0 12px 30px -10px rgba(0,0,0,0.6);
+            transition: transform 0.2s ease, border-color 0.2s;
+        }
+
+        .card:hover {
+            border-color: rgba(59, 130, 246, 0.2);
+        }
+
+        .title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #d6e4ff;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .title i {
+            color: #1d4ed8;
+            font-size: 20px;
+        }
+
+        /* ===== FORMS (GhostGuard-stil) ===== */
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #9fb3d9;
+            margin-bottom: 8px;
+            letter-spacing: 0.3px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        input:focus, select:focus {
+            border-color: #1d4ed8;
+            background: rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.2);
+        }
+
+        input::placeholder {
+            color: #536b99;
+        }
+
+        /* ===== GRID ===== */
+        .row {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 20px;
+            align-items: end;
+        }
+
+        /* ===== BUTTONS (GhostGuard-stil) ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.03);
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(4px);
+        }
+
+        .btn:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.15);
+        }
+
+        .btn i {
+            font-size: 14px;
+        }
+
+        .btn-blue, .btn-primary {
+            background: #1d4ed8;
+            border-color: rgba(255,255,255,0.15);
+        }
+
+        .btn-blue:hover, .btn-primary:hover {
+            background: #256ef0;
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(29, 78, 216, 0.3);
+        }
+
+        .btn-green, .btn-success {
+            background: #16a34a;
+            border-color: rgba(255,255,255,0.15);
+        }
+
+        .btn-green:hover, .btn-success:hover {
+            background: #22c55e;
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(22, 163, 74, 0.3);
+        }
+
+        .btn-red, .btn-danger {
+            background: #dc2626;
+            border-color: rgba(255,255,255,0.15);
+        }
+
+        .btn-red:hover, .btn-danger:hover {
+            background: #ef4444;
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(220, 38, 38, 0.3);
+        }
+
+        .btn-orange {
+            background: #f97316;
+            border-color: rgba(255,255,255,0.15);
+        }
+
+        .btn-orange:hover {
+            background: #fb923c;
+            transform: translateY(-1px);
+        }
+
+        .btn-red-outline, .btn-danger-outline {
+            background: transparent;
+            border: 1px solid #dc2626;
+            color: #dc2626;
+        }
+
+        .btn-red-outline:hover, .btn-danger-outline:hover {
+            background: #dc2626;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #f97316;
+            border-color: rgba(255,255,255,0.15);
+        }
+
+        .btn-warning:hover {
+            background: #fb923c;
+        }
+
+        /* ===== ACTIONS GROUP ===== */
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        /* ===== TABLE (GhostGuard-stil) ===== */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        th {
+            text-align: left;
+            padding: 10px 14px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #536b99;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            background: rgba(0,0,0,0.15);
+        }
+
+        th:first-child { border-radius: 10px 0 0 0; }
+        th:last-child  { border-radius: 0 10px 0 0; }
+
+        td {
+            padding: 14px 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            color: #cbd5f5;
+            vertical-align: middle;
+        }
+
+        tbody tr:last-child td { border-bottom: none; }
+
+        tbody tr {
+            transition: background 0.15s ease;
+        }
+
+        tbody tr:hover {
+            background: rgba(29, 78, 216, 0.06);
+        }
+
+        .table-wrap {
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.05);
+            margin-top: 15px;
+        }
+
+        .table-wrap table {
+            margin-top: 0;
+        }
+
+        /* ===== STATUS PILL (GhostGuard-stil) ===== */
+        .pill {
+            display: inline-block;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 40px;
+            background: rgba(2, 6, 23, 0.5);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #9fb3d9;
+        }
+
+        .pill.good {
+            color: #4ade80;
+            border-color: rgba(74, 222, 128, 0.2);
+            background: rgba(74, 222, 128, 0.1);
+        }
+
+        .pill.bad {
+            color: #f87171;
+            border-color: rgba(248, 113, 113, 0.2);
+            background: rgba(248, 113, 113, 0.1);
+        }
+
+        /* ===== UTILITY ===== */
+        .mono {
+            font-family: monospace;
+            font-size: 13px;
+            color: #bcd6ff;
+        }
+
+        .msg {
+            margin-top: 16px;
+            font-size: 13px;
+            color: #9fb3d9;
+            min-height: 20px;
+        }
+
+        .small {
+            font-size: 12px;
+            color: #7f96c0;
+            margin-top: 8px;
+        }
+
+        /* ===== MOBILE OPTIMIZATION ===== */
+        @media (max-width: 900px) {
+            header {
+                padding: 0 20px;
+            }
+
+            .layout {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                flex-direction: row;
+                overflow-x: auto;
+                padding: 15px;
+                border-right: none;
+                border-bottom: 1px solid rgba(255,255,255,0.05);
+                gap: 8px;
+            }
+
+            .logo {
+                display: none;
+            }
+
+            .nav-btn {
+                white-space: nowrap;
+                margin-bottom: 0;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .row {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 600px) {
+            header {
+                padding: 0 15px;
+                height: 60px;
+            }
+
+            .brand {
+                font-size: 14px;
+            }
+
+            .content {
+                padding: 15px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .row {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+            
+            th, td {
+                padding: 12px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            <i class="fas fa-ghost"></i> GhostGuard • Admin Panel
+        </div>
+        <button class="btn" id="refresh">
+            <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+    </header>
+
+    <div class="layout">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-ghost"></i> GhostGuard
+            </div>
+            <button class="nav-btn active" data-view="dashboard">
+                <i class="fas fa-home"></i> Dashboard
+            </button>
+            <button class="nav-btn" data-view="licenses">
+                <i class="fas fa-key"></i> Licenser
+            </button>
+            <button class="nav-btn" data-view="customers">
+                <i class="fas fa-user"></i> Kunder
+            </button>
+            <button class="nav-btn" data-view="bans">
+                <i class="fas fa-ban"></i> Bans
+            </button>
+            <button class="nav-btn" data-view="servers">
+                <i class="fas fa-server"></i> Servrar
+            </button>
+        </aside>
+
+        <!-- CONTENT -->
+        <main class="content">
+            <!-- DASHBOARD VIEW -->
+            <div class="view active" id="dashboard">
+                                <!-- STATS GRID -->
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:30px;">
+                    <div class="card" style="margin-bottom:0;text-align:center;">
+                        <div style="font-size:32px;font-weight:800;color:#60a5fa;" id="statLicenses">â</div>
+                        <div style="font-size:13px;color:#9fb3d9;margin-top:6px;"><i class="fas fa-key" style="color:#1d4ed8;margin-right:6px;"></i>Licenser</div>
+                        <div style="font-size:11px;color:#4ade80;margin-top:4px;" id="statActiveLicenses">â aktiva</div>
+                    </div>
+                    <div class="card" style="margin-bottom:0;text-align:center;">
+                        <div style="font-size:32px;font-weight:800;color:#60a5fa;" id="statCustomers">â</div>
+                        <div style="font-size:13px;color:#9fb3d9;margin-top:6px;"><i class="fas fa-users" style="color:#1d4ed8;margin-right:6px;"></i>Kunder</div>
+                        <div style="font-size:11px;color:#4ade80;margin-top:4px;" id="statActiveCustomers">â aktiva</div>
+                    </div>
+                    <div class="card" style="margin-bottom:0;text-align:center;">
+                        <div style="font-size:32px;font-weight:800;color:#f87171;" id="statBans">â</div>
+                        <div style="font-size:13px;color:#9fb3d9;margin-top:6px;"><i class="fas fa-ban" style="color:#dc2626;margin-right:6px;"></i>Aktiva bans</div>
+                        <div style="font-size:11px;color:#9fb3d9;margin-top:4px;" id="statTotalBans">â totalt</div>
+                    </div>
+                </div>
+
+<div class="card">
+                    <div class="title">
+                        <i class="fas fa-lock"></i> Admin Secret
+                    </div>
+                    <input id="secret" type="password" placeholder="ADMIN_SECRET"/>
+                    <div style="margin-top: 15px;">
+                        <button class="btn btn-blue" id="saveSecret">
+                            <i class="fas fa-save"></i> Spara
+                        </button>
+                    </div>
+                    <div class="small">
+                        Skickas som: <span class="mono">Authorization: Bearer &lt;secret&gt;</span>
+                    </div>
+                    <div class="msg" id="secretMsg"></div>
+                </div>
+
+                <div class="card">
+                    <div class="title">
+                        <i class="fas fa-plus-circle"></i> Skapa ny licens
+                    </div>
+                    <div class="row">
+                        <div>
+                            <label>Plan</label>
+                            <select id="licenseDuration">
+                                <option value="30">1 Månad (30 dagar)</option>
+                                <option value="90">3 Månader (90 dagar)</option>
+                                <option value="lifetime">Livstid</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>&nbsp;</label>
+                            <button class="btn btn-green" id="createLicense">
+                                <i class="fas fa-key"></i> Skapa
+                            </button>
+                        </div>
+                        <div>
+                            <label>Resultat</label>
+                            <input id="newLicense" readonly placeholder="Ny licens visas här"/>
+                        </div>
+                    </div>
+                    <div class="msg" id="licMsg"></div>
+                </div>
+            </div>
+
+            <!-- LICENSE VIEW -->
+            <div class="view" id="licenses">
+                <div class="card">
+                    <div class="title">
+                        <i class="fas fa-clipboard-list"></i> Alla licenser
+                    </div>
+                    <div class="table-wrap">
+
+                    <div class="table-wrap">
+
+
+                    <div class="table-wrap">
+
+
+
+                    <div class="table-wrap">
+
+
+
+
+                    <div class="table-wrap">
+
+
+
+
+
+                    <div class="table-wrap">
+
+
+
+
+
+
+                    <div class="table-wrap">
+
+
+
+
+
+
+
+                    <div class="table-wrap">
+
+
+
+
+
+
+
+
+                    <div class="table-wrap">
+
+
+
+
+
+
+
+
+
+                    <div class="table-wrap">
+
+
+
+
+
+
+
+
+
+
+                    <div class="table-wrap">
+
+
+
+
+
+
+
+
+
+
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Key</th>
+                                <th>Status</th>
+                                <th>Skapad</th>
+                                <th>Slutar</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody"></tbody>
+                    </table>
+
+
+
+
+
+
+
+
+
+
+
+                    </div>
+
+
+
+
+
+
+
+
+
+
+                    </div>
+
+
+
+
+
+
+
+
+
+                    </div>
+
+
+
+
+
+
+
+
+                    </div>
+
+
+
+
+
+
+
+                    </div>
+
+
+
+
+
+
+                    </div>
+
+
+
+
+
+                    </div>
+
+
+
+
+                    </div>
+
+
+
+                    </div>
+
+
+                    </div>
+
+                    </div>
+                    <div class="msg" id="listMsg"></div>
+                </div>
+            </div>
+
+            <!-- CUSTOMERS VIEW -->
+            <div class="view" id="customers">
+                <div class="card">
+                    <div class="title">
+                        <i class="fas fa-user"></i> Skapa kund
+                    </div>
+                    <div class="row">
+                        <div>
+                            <label>Username</label>
+                            <input id="cu" placeholder="kund1"/>
+                        </div>
+                        <div>
+                            <label>Password</label>
+                            <input id="cp" type="password" placeholder="lösenord"/>
+                        </div>
+                        <div>
+                            <label>License Key</label>
+                            <input id="ck" placeholder="GG-XXXX-XXXX"/>
+                        </div>
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <button class="btn btn-blue" id="createCustomer">
+                            <i class="fas fa-user-plus"></i> Skapa kund
+                        </button>
+                    </div>
+                    <div class="msg" id="custMsg"></div>
+                </div>
+
+                <div class="card">
+                    <div class="title">
+                        <i class="fas fa-users"></i> Alla kunder
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Kund</th>
+                                <th>Status</th>
+                                <th>Skapad</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customerTable"></tbody>
+                    </table>
+                    <div class="msg" id="customerListMsg"></div>
+                </div>
+            </div>
+
+            <!-- BANS VIEW -->
+            <div class="view" id="bans">
+                <div class="card">
+                    <div class="title">
+                        <i class="fas fa-ban"></i> Alla bans
+                    </div>
+                    <div style="display:flex;gap:10px;margin-bottom:15px;">
+                        <button class="btn btn-blue" id="filterAllBans"><i class="fas fa-list"></i> Alla</button>
+                        <button class="btn" id="filterActiveBans"><i class="fas fa-circle" style="color:#4ade80;"></i> Aktiva</button>
+                        <button class="btn" id="filterInactiveBans"><i class="fas fa-circle" style="color:#6b7280;"></i> Inaktiva</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Spelare</th>
+                                <th>Anledning</th>
+                                <th>Bannad av</th>
+                                <th>Status</th>
+                                <th>Datum</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bansTable"></tbody>
+                    </table>
+                    <div class="msg" id="bansMsg"></div>
+                </div>
+            </div>
+
+            <!-- SERVERS VIEW -->
+            <div class="view" id="servers">
+                <div class="card">
+                    <div class="title">
+                        <i class="fas fa-server"></i> Serveröversikt
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>License</th>
+                                <th>Plan</th>
+                                <th>Status</th>
+                                <th>Spelare</th>
+                                <th>Version</th>
+                                <th>Aktiva bans</th>
+                                <th>Detektioner 24h</th>
+                                <th>Senast sedd</th>
+                            </tr>
+                        </thead>
+                        <tbody id="serversTable"></tbody>
+                    </table>
+                    <div class="msg" id="serversMsg"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const API_BASE = "https://ghostgaurd-becakd.onrender.com";
+
+        /* ================= STORAGE ================= */
+        function getSecret() {
+            return localStorage.getItem("gg_admin_secret") || "";
+        }
+
+        function setSecret(v) {
+            localStorage.setItem("gg_admin_secret", v);
+        }
+
+        document.getElementById("secret").value = getSecret();
+
+        document.getElementById("saveSecret").onclick = () => {
+            const val = document.getElementById("secret").value.trim();
+            if (!val) {
+                alert("Secret får inte vara tomt");
+                return;
+            }
+            setSecret(val);
+            document.getElementById("secretMsg").innerText = "Secret sparat";
+        };
+
+        /* ================= HELPERS ================= */
+        function authHeaders() {
+            const secret = getSecret();
+            if (!secret) {
+                alert("Admin secret saknas!");
+                throw new Error("NO_ADMIN_SECRET");
+            }
+            return {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + secret
+            };
+        }
+
+        function statusPill(s) {
+            const ok = (s === "ACTIVE");
+            const cls = ok ? "good" : "bad";
+            return `<span class="pill ${cls}">${s || "-"}</span>`;
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return "Livstid";
+            const d = new Date(dateStr);
+            return d.toLocaleDateString("sv-SE", { year: "numeric", month: "short", day: "numeric" });
+        }
+
+        async function safeJson(res) {
+            const text = await res.text();
+            try {
+                return JSON.parse(text);
+            } catch {
+                return null;
+            }
+        }
+
+        /* ================= LICENSES ================= */
+        async function loadLicenses() {
+            try {
+                const res = await fetch(API_BASE + "/admin/licenses", { headers: authHeaders() });
+                const json = await safeJson(res);
+                if (!res.ok || !json?.success) return;
+
+                const rows = (json.data || []).map(l => {
+                    const isActive = l.status === "ACTIVE";
+                    const next = isActive ? "DISABLED" : "ACTIVE";
+                    return `
+                        <tr>
+                            <td class="mono">${l.license_key}</td>
+                            <td>${statusPill(l.status)}</td>
+                            <td>${formatDate(l.created_at)}</td>
+                            <td>${formatDate(l.expires_at)}</td>
+                            <td class="actions">
+                                <button class="btn ${isActive ? 'btn-danger' : 'btn-success'}" onclick="toggleLicense('${l.license_key}','${next}')">
+                                    ${isActive ? 'Stäng av' : 'Aktivera'}
+                                </button>
+                                <button class="btn btn-danger-outline" onclick="deleteLicense('${l.license_key}')">
+                                    Ta bort
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join("");
+                document.getElementById("tbody").innerHTML = rows;
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function toggleLicense(key, status) {
+            try {
+                await fetch(API_BASE + "/admin/toggle-license", {
+                    method: "POST",
+                    headers: authHeaders(),
+                    body: JSON.stringify({ license_key: key, status })
+                });
+                loadLicenses();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function deleteLicense(key) {
+            if (!confirm("Ta bort licensen?")) return;
+            try {
+                await fetch(API_BASE + "/admin/delete-license/" + key, {
+                    method: "DELETE",
+                    headers: authHeaders()
+                });
+                loadLicenses();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        /* ================= CUSTOMERS ================= */
+        async function loadCustomers() {
+            try {
+                const res = await fetch(API_BASE + "/admin/customers", { headers: authHeaders() });
+                const json = await safeJson(res);
+                if (!res.ok || !json?.success) return;
+
+                const rows = (json.data || []).map(c => {
+                    const isActive = c.active === true;
+                    return `
+                        <tr>
+                            <td><div style="font-weight:500;">${c.username}</div><div style="font-size:11px;color:#536b99;margin-top:2px;font-family:monospace;">${c.license_key}</div></td>
+                            <td>${statusPill(isActive ? "ACTIVE" : "DISABLED")}</td>
+                            <td>${formatDate(c.created_at)}</td>
+                            <td class="actions">
+                                <button class="btn btn-orange" onclick="changePassword('${c.id}')">
+                                    Byt lösenord
+                                </button>
+                                <button class="btn btn-blue" onclick="generatePasswordForUser('${c.id}')">
+                                    Generera nytt
+                                </button>
+                                <button class="btn ${isActive ? 'btn-danger' : 'btn-success'}" onclick="toggleCustomer('${c.id}', ${isActive})">
+                                    ${isActive ? 'Pausa' : 'Aktivera'}
+                                </button>
+                                <button class="btn btn-danger-outline" onclick="deleteCustomer('${c.id}')">
+                                    Ta bort
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join("");
+                document.getElementById("customerTable").innerHTML = rows;
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function toggleCustomer(id, current) {
+            try {
+                await fetch(API_BASE + "/admin/toggle-customer", {
+                    method: "POST",
+                    headers: authHeaders(),
+                    body: JSON.stringify({ id, active: !current })
+                });
+                loadCustomers();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function deleteCustomer(id) {
+            if (!confirm("Ta bort konto?")) return;
+            try {
+                await fetch(API_BASE + "/admin/delete-customer/" + id, {
+                    method: "DELETE",
+                    headers: authHeaders()
+                });
+                loadCustomers();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function changePassword(id) {
+            const pass = prompt("Nytt lösenord:");
+            if (!pass) return;
+            try {
+                await fetch(API_BASE + "/admin/update-customer-password", {
+                    method: "POST",
+                    headers: authHeaders(),
+                    body: JSON.stringify({ id, new_password: pass })
+                });
+                alert("Lösenord uppdaterat");
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function generateRandomPassword() {
+            return Math.random().toString(36).slice(-8);
+        }
+
+        async function generatePasswordForUser(id) {
+            const pass = generateRandomPassword();
+            try {
+                await fetch(API_BASE + "/admin/update-customer-password", {
+                    method: "POST",
+                    headers: authHeaders(),
+                    body: JSON.stringify({ id, new_password: pass })
+                });
+                alert("Nytt lösenord: " + pass);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        /* ================= CREATE CUSTOMER ================= */
+        document.getElementById("createCustomer").onclick = async () => {
+            const u = document.getElementById("cu").value.trim();
+            const p = document.getElementById("cp").value.trim();
+            const k = document.getElementById("ck").value.trim();
+            if (!u || !p || !k) {
+                alert("Fyll i alla fält");
+                return;
+            }
+            try {
+                await fetch(API_BASE + "/admin/create-customer", {
+                    method: "POST",
+                    headers: authHeaders(),
+                    body: JSON.stringify({ username: u, password: p, license_key: k })
+                });
+                loadCustomers();
+                document.getElementById("cu").value = "";
+                document.getElementById("cp").value = "";
+                document.getElementById("ck").value = "";
+            } catch (e) {
+                console.error(e);
+            }
+        };
+
+        /* ================= CREATE LICENSE ================= */
+        document.getElementById("createLicense").onclick = async () => {
+            const duration = document.getElementById("licenseDuration").value;
+            try {
+                const res = await fetch(API_BASE + "/admin/create-license", {
+                    method: "POST",
+                    headers: authHeaders(),
+                    body: JSON.stringify({ duration })
+                });
+                const json = await safeJson(res);
+                if (json?.success && json?.license_key) {
+                    document.getElementById("newLicense").value = json.license_key;
+                    document.getElementById("licMsg").innerText = "Licens skapad!";
+                    loadLicenses();
+                } else {
+                    document.getElementById("licMsg").innerText = "Misslyckades att skapa licens";
+                }
+            } catch (e) {
+                console.error(e);
+                document.getElementById("licMsg").innerText = "Fel vid anrop";
+            }
+        };
+
+        /* ================= NAVIGATION ================= */
+        document.querySelectorAll(".nav-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+                document.getElementById(btn.dataset.view).classList.add("active");
+                if (btn.dataset.view === "licenses") loadLicenses();
+                if (btn.dataset.view === "customers") loadCustomers();
+                if (btn.dataset.view === "bans") loadBans();
+                if (btn.dataset.view === "servers") loadServers();
+                if (btn.dataset.view === "dashboard") loadStats();
+            });
+        });
+
+        /* ================= INIT ================= */
+        document.getElementById("refresh").onclick = () => {
+            loadStats();
+            loadLicenses();
+            loadCustomers();
+            loadBans();
+            loadServers();
+        };
+
+        loadStats();
+        loadLicenses();
+        loadCustomers();
+
+
+        /* ================= STATS ================= */
+        async function loadStats() {
+            try {
+                const res = await fetch(API_BASE + '/admin/stats', { headers: authHeaders() });
+                const json = await safeJson(res);
+                if (!json || !json.success) return;
+                const s = json.stats;
+                document.getElementById('statLicenses').innerText = s.totalLicenses;
+                document.getElementById('statActiveLicenses').innerText = s.activeLicenses + ' aktiva';
+                document.getElementById('statCustomers').innerText = s.totalCustomers;
+                document.getElementById('statActiveCustomers').innerText = s.activeCustomers + ' aktiva';
+                document.getElementById('statBans').innerText = s.activeBans;
+                document.getElementById('statTotalBans').innerText = s.totalBans + ' totalt';
+            } catch(e) { console.error(e); }
+        }
+
+        /* ================= BANS ================= */
+        let allBansData = [];
+        let bansFilter = 'all';
+
+        async function loadBans() {
+            try {
+                const res = await fetch(API_BASE + '/admin/bans', { headers: authHeaders() });
+                const json = await safeJson(res);
+                if (!res.ok || !json?.success) return;
+                allBansData = json.data || [];
+                renderBans();
+            } catch(e) { console.error(e); }
+        }
+
+        function renderBans() {
+            const rows = allBansData
+                .filter(b => {
+                    if (bansFilter === 'active') return b.active === true;
+                    if (bansFilter === 'inactive') return b.active === false;
+                    return true;
+                })
+                .map(b => {
+                    const isActive = b.active === true;
+                    const shortId = (b.ban_id || '').slice(-8);
+                    const reason = (b.reason || '-').length > 60 ? (b.reason || '-').slice(0, 60) + '...' : (b.reason || '-');
+                    return '<tr>' +
+                        '<td><div style="font-weight:500;">' + (b.player_name || 'Unknown') + '</div><div style="font-size:11px;color:#536b99;margin-top:2px;font-family:monospace;">#' + shortId + '</div></td>' +
+                        '<td style="max-width:220px;" title="' + (b.reason || '') + '">' + reason + '</td>' +
+                        '<td style="color:#9fb3d9;">' + (b.banned_by || '-') + '</td>' +
+                        '<td>' + statusPill(isActive ? 'ACTIVE' : 'INACTIVE') + '</td>' +
+                        '<td style="color:#9fb3d9;font-size:13px;">' + formatDate(b.created_at) + '</td>' +
+                        '<td class="actions">' +
+                            (isActive ? '<button class="btn btn-success" style="padding:8px 12px;font-size:12px;" onclick="adminUnban(' + "'" + b.ban_id + "'" + ')"><i class="fas fa-unlock"></i> Unban</button>' : '<span style="color:#536b99;font-size:12px;">Inaktiv</span>') +
+                        '</td>' +
+                        '</tr>';
+                }).join('');
+            document.getElementById('bansTable').innerHTML = rows || '<tr><td colspan="8" style="text-align:center;color:#536b99;">Inga bans</td></tr>';
+        }
+
+        async function adminUnban(ban_id) {
+            if (!confirm('Unbanna ' + ban_id + '?')) return;
+            try {
+                await fetch(API_BASE + '/admin/unban', {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify({ ban_id })
+                });
+                loadBans();
+                loadStats();
+            } catch(e) { console.error(e); }
+        }
+
+        document.getElementById('filterAllBans').onclick = () => { bansFilter = 'all'; renderBans(); };
+        document.getElementById('filterActiveBans').onclick = () => { bansFilter = 'active'; renderBans(); };
+        document.getElementById('filterInactiveBans').onclick = () => { bansFilter = 'inactive'; renderBans(); };
+
+        /* ================= SERVERS ================= */
+        async function loadServers() {
+            try {
+                const res = await fetch(API_BASE + '/admin/servers', { headers: authHeaders() });
+                const json = await safeJson(res);
+                if (!res.ok || !json?.success) return;
+
+                const rows = (json.data || []).map(s => {
+                    const online = s.online === true;
+                    const uptime = s.uptime ? formatUptime(s.uptime) : '-';
+                    return '<tr>' +
+                        '<td><div style="font-weight:500;">' + (s.server_name || s.license_key || 'Server') + '</div><div style="font-size:11px;color:#536b99;margin-top:2px;font-family:monospace;">' + (s.plan || '') + ' · ' + (s.license_key || '') + '</div></td>' +
+                        '<td>' + statusPill(online ? 'ACTIVE' : 'OFFLINE') + '</td>' +
+                        '<td>' + (s.player_count ?? '-') + ' / ' + (s.max_players ?? '-') + '</td>' +
+                        '<td class="mono">' + (s.version || '-') + '</td>' +
+                        '<td>' + (s.active_bans ?? '-') + '</td>' +
+                        '<td>' + (s.detections_24h ?? '-') + '</td>' +
+                        '<td>' + formatDate(s.server_last_seen || s.license_last_seen) + '</td>' +
+                        '</tr>';
+                }).join('');
+                document.getElementById('serversTable').innerHTML = rows || '<tr><td colspan="8" style="text-align:center;color:#536b99;">Inga servrar</td></tr>';
+            } catch(e) { console.error(e); }
+        }
+
+        function formatUptime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            return h + 'h ' + m + 'm';
+        }
+
+        /* Make functions global */
+
+        window.adminUnban = adminUnban;
+        window.toggleCustomer = toggleCustomer;
+        window.deleteCustomer = deleteCustomer;
+        window.changePassword = changePassword;
+        window.generatePasswordForUser = generatePasswordForUser;
+        window.toggleLicense = toggleLicense;
+        window.deleteLicense = deleteLicense;
+    </script>
+</body>
+</html>

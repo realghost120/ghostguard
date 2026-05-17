@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <title>GhostGuard</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body class="hidden">
+
+  <div id="app">
+    <div class="panel">
+      <div class="topbar">
+        <div class="brand">
+          <div class="logo"><i class="fas fa-ghost"></i></div>
+          <div>
+            <div class="title">GhostGuard</div>
+            <div class="subtitle" id="onlineCount">0 online</div>
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <button class="btn btn-ghost" id="btnRefresh" title="Refresh"><i class="fas fa-sync-alt"></i></button>
+          <button class="btn btn-ghost" id="btnClose" title="Close"><i class="fas fa-times"></i></button>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="players"><i class="fas fa-users"></i> Players</button>
+        <button class="tab" data-tab="bans"><i class="fas fa-ban"></i> Bans</button>
+        <button class="tab" data-tab="logs"><i class="fas fa-scroll"></i> Logs</button>
+        <button class="tab" data-tab="alerts"><i class="fas fa-exclamation-triangle"></i> Alerts</button>
+      </div>
+
+      <div class="content">
+        <!-- LEFT -->
+        <div class="left">
+          <div class="card">
+            <div class="card-title" id="leftTitle">Spelare online</div>
+            <div class="list" id="leftList"></div>
+            <div class="empty" id="leftEmpty">Inget att visa.</div>
+          </div>
+        </div>
+
+        <!-- RIGHT -->
+        <div class="right">
+          <div class="card">
+            <div class="card-title" id="rightTitle">Info</div>
+
+            <div id="rightEmpty" class="empty">
+              Välj en rad i listan för att se info.
+            </div>
+
+            <!-- PLAYER DETAILS -->
+            <div id="playerDetails" class="details hidden">
+              <div class="kv">
+                <div class="k">Namn</div><div class="v" id="pdName">-</div>
+                <div class="k">ID</div><div class="v" id="pdId">-</div>
+                <div class="k">Ping</div><div class="v" id="pdPing">-</div>
+                <div class="k">Identifier</div><div class="v mono" id="pdIdent">-</div>
+              </div>
+
+              <div class="section">
+                <div class="section-title">Actions</div>
+                <div class="action-row">
+                  <button class="btn btn-dark" id="btnGoto"><i class="fas fa-location-arrow"></i> Goto</button>
+                  <button class="btn btn-dark" id="btnFreeze"><i class="fas fa-snowflake"></i> Freeze</button>
+                </div>
+
+                <div class="field">
+                  <label>Anledning</label>
+                  <input id="reason" placeholder="valfritt (krävs för kick/ban)"/>
+                </div>
+
+                <div class="action-row">
+                  <button class="btn btn-warn" id="btnKick"><i class="fas fa-user-slash"></i> Kick</button>
+                  <button class="btn btn-danger" id="btnBan"><i class="fas fa-gavel"></i> Ban</button>
+                </div>
+
+                <div class="field">
+                  <div class="hint">Ban är alltid <span class="mono">PERMANENT</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- BAN DETAILS -->
+            <div id="banDetails" class="details hidden">
+              <div class="kv">
+                <div class="k">Ban ID</div><div class="v mono" id="bdId">-</div>
+                <div class="k">Namn</div><div class="v" id="bdName">-</div>
+                <div class="k">Reason</div><div class="v" id="bdReason">-</div>
+                <div class="k">Skapad</div><div class="v" id="bdCreated">-</div>
+                <div class="k">Går ut</div><div class="v" id="bdExpires">-</div>
+                <div class="k">Identifier</div><div class="v mono" id="bdIdent">-</div>
+              </div>
+
+              <div class="section">
+                <div class="section-title">Actions</div>
+                <button class="btn btn-danger" id="btnUnban"><i class="fas fa-check-circle"></i> Unban</button>
+              </div>
+            </div>
+
+            <!-- LOG DETAILS -->
+            <div id="logDetails" class="details hidden">
+              <div class="logbox" id="logBox"></div>
+            </div>
+
+            <!-- ALERT DETAILS -->
+            <div id="alertDetails" class="details hidden">
+              <div class="kv">
+                <div class="k">Tid</div><div class="v" id="adTime">-</div>
+                <div class="k">Spelare</div><div class="v" id="adName">-</div>
+                <div class="k">ID</div><div class="v" id="adId">-</div>
+                <div class="k">Typ</div><div class="v" id="adType">-</div>
+                <div class="k">Detaljer</div><div class="v" id="adDetails">-</div>
+                <div class="k">Identifier</div><div class="v mono" id="adIdent">-</div>
+              </div>
+
+              <div class="section">
+                <div class="section-title">DM till spelare</div>
+                <div class="field">
+                  <label>Meddelande</label>
+                  <input id="dmText" placeholder="Skriv något..." />
+                </div>
+                <button class="btn btn-dark" id="btnSendDM"><i class="fas fa-paper-plane"></i> Skicka</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div class="muted">Esc stänger panelen</div>
+        <div class="muted">GhostGuard • Admin Panel</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
