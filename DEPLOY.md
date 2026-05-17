@@ -2,9 +2,24 @@
 
 ## Arkitektur
 
-- **labbet.se** → endast `index.html` (landningssida)
-- **Railway** → backend API + admin-panel + customer dashboard + PostgreSQL
-- **FiveM-resurs** → ligger på kundens server, pekar mot Railway-domänen
+- **labbet.se** → `index.html` + `preview.png` (endast landningssida, ligger utanför detta repo)
+- **Railway** → backend API + admin-panel + customer dashboard + PostgreSQL + zip-download
+- **FiveM-resurs** (`GhostGuard-Anticheat/`) → ligger på kundens server, pekar mot Railway-domänen
+
+## Innehåll i repo
+
+```
+.
+├── index.js                    # Backend (Express + pg)
+├── package.json
+├── schema.sql                  # PostgreSQL-schema
+├── Procfile                    # Railway start command
+├── admin.html                  # Serveras på /admin
+├── dashboard.html              # Serveras på /dashboard
+├── download/
+│   └── GhostGuard-Anticheat.zip   # Serveras på /download/...
+└── GhostGuard-Anticheat/       # FiveM-resurs (källkod)
+```
 
 ---
 
@@ -24,7 +39,7 @@
 2. Klistra in hela `schema.sql` och kör
 
 ### d) Sätt environment variables
-I Railway → Variables, lägg till:
+I Railway → Variables:
 
 | Variabel              | Värde                                       |
 |----------------------|---------------------------------------------|
@@ -32,60 +47,71 @@ I Railway → Variables, lägg till:
 | `LICENSE_SECRET`     | Slumpmässig hex-sträng (32+ tecken)         |
 | `ADMIN_SECRET`       | Slumpmässig hex-sträng (32+ tecken)         |
 | `PUBLIC_URL`         | `https://din-domän.se` (efter custom domain)|
-| `DASHBOARD_ORIGIN`   | `https://labbet.se` (valfritt, CORS-lås)    |
+| `DASHBOARD_ORIGIN`   | `https://labbet.se` (CORS-lås)              |
 
-Generera secrets med PowerShell:
+Generera secret (PowerShell):
 ```powershell
 -join ((1..32) | ForEach-Object { '{0:x}' -f (Get-Random -Max 16) })
 ```
 
 ### e) Custom domain
 1. Railway → Settings → Networking → Add Custom Domain
-2. Lägg till `api.dindomän.se` (eller vad du vill)
-3. Sätt CNAME hos din DNS-leverantör enligt Railway
+2. Lägg till `api.dindomän.se`
+3. Sätt CNAME hos DNS-leverantör enligt Railway
 
 ---
 
-## 2. Uppdatera URL:er i frontend & FiveM
+## 2. Uppdatera URL:er
 
-Efter att Railway-domänen finns, kör i denna mapp:
+Efter att Railway-domänen är klar, sök/ersätt `api.ghostguardac.se`:
 
 ```bash
-# Byt ut placeholder mot din riktiga Railway-URL
-grep -rl "api.ghostguardac.se" . | xargs sed -i 's|https://api.ghostguardac.se|https://DIN-RAILWAY-URL|g'
+grep -rl "api.ghostguardac.se" . | xargs sed -i 's|https://api.ghostguardac.se|https://DIN-DOMÄN|g'
 ```
 
 Filer som påverkas:
-- `admin.html` — `API_BASE`
-- `dashboard.html` — `API`
-- `index.html` — `API`
-- `GhostGuard-Anticheat/config.lua` — `Config.BackendURL`
-- `GhostGuard-Anticheat/server/update.lua` — `VERSION_URL`
+- `admin.html` (API_BASE)
+- `dashboard.html` (API)
+- `GhostGuard-Anticheat/config.lua` (Config.BackendURL)
+- `GhostGuard-Anticheat/server/update.lua` (VERSION_URL)
+- `landing/index.html` på labbet.se (API-konstant)
 
 ---
 
 ## 3. labbet.se (landningssida)
 
-Ladda upp endast `index.html` + ev. `preview.png` till labbet.se via FTP/cPanel.
+`index.html` + `preview.png` ligger inte i detta repo. Ladda upp via FTP/cPanel till labbet.se.
+
+I `index.html` ska konstanten `API` peka mot Railway-domänen.
 
 ---
 
 ## 4. FiveM-resursen
 
-`GhostGuard-Anticheat/`-mappen ska till **kundens** FiveM-server:
-1. Kopiera mappen till `resources/`
-2. Lägg `ensure GhostGuard-Anticheat` i `server.cfg`
-3. Sätt rätt `LicenseKey` i `config.lua`
+`GhostGuard-Anticheat/`-mappen distribueras till kunder via `/download/GhostGuard-Anticheat.zip`.
+
+Kunden:
+1. Laddar ner zippen
+2. Extraherar till `resources/GhostGuard-Anticheat`
+3. Lägger `ensure GhostGuard-Anticheat` i `server.cfg`
+4. Sätter rätt `LicenseKey` i `config.lua`
 
 ---
 
 ## 5. Endpoints (snabbreferens)
 
-- `GET  /` → health check
-- `GET  /admin` → admin-panel (HTML)
-- `GET  /dashboard` → kund-dashboard (HTML)
-- `POST /api/license/verify` → FiveM licensvalidering
-- `POST /api/server/ban` → registrera ban
-- `GET  /api/server/ban/evidence/:banId` → hämta bevisbild (bytea→stream)
-- `POST /api/server/heartbeat` → server keep-alive
-- Admin endpoints kräver `Authorization: Bearer <ADMIN_SECRET>`
+| Route                                    | Beskrivning                            |
+|-----------------------------------------|----------------------------------------|
+| `GET  /`                                 | Health check                           |
+| `GET  /health`                           | Health JSON                            |
+| `GET  /admin`                            | Admin-panel (HTML)                     |
+| `GET  /dashboard`                        | Kund-dashboard (HTML)                  |
+| `GET  /download/GhostGuard-Anticheat.zip`| FiveM-resurs download                  |
+| `GET  /version`                          | Version + download-länk                |
+| `POST /api/license/verify`               | FiveM licensvalidering                 |
+| `POST /api/server/ban`                   | Registrera ban                         |
+| `GET  /api/server/ban/evidence/:banId`   | Hämta bevisbild (bytea→stream)         |
+| `POST /api/server/heartbeat`             | Server keep-alive                      |
+| `POST /api/login`                        | Kund-login                             |
+
+Admin-endpoints kräver `Authorization: Bearer <ADMIN_SECRET>`.

@@ -119,6 +119,9 @@ async function resolvePanelIdentity(token) {
 app.get("/admin", (_req, res) => res.sendFile(path.join(__dirname, "admin.html")));
 app.get("/dashboard", (_req, res) => res.sendFile(path.join(__dirname, "dashboard.html")));
 
+// Download (FiveM anticheat zip)
+app.use("/download", express.static(path.join(__dirname, "download")));
+
 /* ================= ROOT ================= */
 app.get("/", (_req, res) => res.send("GhostGuard Backend OK"));
 app.get("/health", (_req, res) => res.json({ ok: true, ts: Date.now() }));
@@ -758,7 +761,7 @@ app.get("/admin/customers", async (req, res) => {
 app.get("/version", (_req, res) => {
   res.json({
     version: "3.1.0",
-    download: (PUBLIC_URL || "") + "/download",
+    download: (PUBLIC_URL || "") + "/download/GhostGuard-Anticheat.zip",
     notes: "Stability improvements & detection optimizations",
   });
 });
